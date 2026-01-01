@@ -13,7 +13,7 @@ class ProjectController extends Controller
     {
         return Inertia::render('Projects/Index', [
             'projects' => Project::with('nhanvien')->orderBy('created_at', 'desc')->get(),
-            'nhanviens' => NhanVien::all()->map(function ($nv) {
+            'nhanvien' => NhanVien::all()->map(function ($nv) {
                 return [
                     'id' => $nv->id,
                     'ten' => $nv->hovaten,
@@ -23,18 +23,21 @@ class ProjectController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $data = $request->validate([
-            'ten_du_an' => 'required|string|max:255',
-            'ngay_bat_dau' => 'required|date',
-            'ngay_ket_thuc' => 'nullable|date',
-            'nhanvien_id' => 'required|exists:nhanvien,id',
-            'tien_do' => 'required|integer|min:0|max:100',
-            'trang_thai' => 'required|string',
-        ]);
-
-        Project::create($data);
-
-        return redirect()->back()->with('success', 'Tạo dự án mới thành công!');
+{
+    if (auth()->user()->role !== 'admin') {
+        return redirect()->back()->with('error', 'Bạn không có quyền tạo dự án!');
     }
+    $data = $request->validate([
+        'ten_du_an' => 'required|string|max:255',
+        'ngay_bat_dau' => 'required|date',
+        'ngay_ket_thuc' => 'nullable|date',
+        'nhanvien_id' => 'required|exists:nhanvien,id', 
+        'tien_do' => 'required|integer|min:0|max:100',
+        'trang_thai' => 'required|string',
+    ]);
+
+    \App\Models\Project::create($data);
+
+    return redirect()->back()->with('success', 'Tạo dự án mới thành công!');
+}
 }

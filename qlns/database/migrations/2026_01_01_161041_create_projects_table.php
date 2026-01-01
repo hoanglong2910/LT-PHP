@@ -21,7 +21,7 @@ class CreateProjectsTable extends Migration
         $table->integer('tien_do')->default(0);
         $table->string('trang_thai')->default('Đang thực hiện');
         // Lưu ý: Tên bảng nhân viên của bạn là 'nhanvien' (không có chữ s)
-        $table->foreignId('nhanvien_id')->constrained('nhanvien'); 
+        $table->foreignId('nhanvien_id')->constrained('nhanvien')->onDelete('cascade');
         $table->timestamps();
     });
 

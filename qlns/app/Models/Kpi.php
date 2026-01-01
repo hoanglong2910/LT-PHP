@@ -21,6 +21,8 @@ class Kpi extends Model
     // Định nghĩa mối quan hệ: 1 dòng KPI thuộc về 1 nhân viên
     public function nhanvien()
     {
-        return $this->belongsTo(NhanVien::class, 'nhanvien_id');
+        return $this->belongsTo(NhanVien::class, 'nhanvien_id')->withDefault([
+        'hovaten' => 'Nhân viên đã nghỉ'
+    ]);
     }
 }

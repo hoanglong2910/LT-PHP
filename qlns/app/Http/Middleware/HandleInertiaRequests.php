@@ -35,25 +35,21 @@ class HandleInertiaRequests extends Middleware
      * @return array
      */
     public function share(Request $request)
-    {
-        return array_merge(parent::share($request), [
-            'auth' => function () use ($request) {
-                return [
-                    'user' => $request->user() ? [
-                        'id' => $request->user()->id,
-                        'nhanvien_id' => $request->user()->nhanvien->id,
-                        'hovaten' => $request->user()->nhanvien->hovaten,
-                        'email' => $request->user()->email,
-                        'role' => $request->user()->role
-                    ] : null,
-                ];
-            },
-            'flash' => function () use ($request) {
-                return [
-                    'success' => $request->session()->get('success'),
-                    'error' => $request->session()->get('error'),
-                ];
-            },
-        ]);
-    }
+{
+    return array_merge(parent::share($request), [
+        'auth' => [
+            'user' => $request->user() ? [
+                'id' => $request->user()->id,
+                'nhanvien_id' => $request->user()->nhanvien->id ?? null,
+                'hovaten' => $request->user()->nhanvien->hovaten ?? $request->user()->name,
+                'email' => $request->user()->email,
+                'role' => $request->user()->role // Đảm bảo cột này trong DB tên là 'role'
+            ] : null,
+        ],
+        'flash' => [
+            'success' => $request->session()->get('success'),
+            'error' => $request->session()->get('error'),
+        ],
+    ]);
+}
 }

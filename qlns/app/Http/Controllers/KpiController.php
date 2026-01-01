@@ -11,15 +11,21 @@ class KpiController extends Controller
 {
     public function index()
     {
-        return Inertia::render('Kpi/Index', [
-        'nhanviens' => \App\Models\NhanVien::all()->map(function ($nv) {
+        $kpis = \App\Models\Kpi::with('nhanvien')->orderBy('created_at', 'desc')->get();
+
+    return Inertia::render('Kpi/Index', [
+        'nhanvien' => \App\Models\NhanVien::all()->map(function ($nv) {
             return [
                 'id' => $nv->id,
                 'ten' => $nv->hovaten, 
             ];
         }),
-        'kpis' => \App\Models\Kpi::with('nhanvien')->orderBy('created_at', 'desc')->get(),
+        'kpis' => $kpis,
+        // Thêm phần lọc danh sách trực tiếp từ server
+        'kpiThap' => $kpis->where('chi_so_kpi', '<', 50)->values(),
+        'kpiCao' => $kpis->where('chi_so_kpi', '>=', 80)->values(),
     ]);
+    
     }
 
     public function store(Request $request)

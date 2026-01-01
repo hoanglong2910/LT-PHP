@@ -9,11 +9,21 @@ class Project extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['ten_du_an', 'ngay_bat_dau', 'ngay_ket_thuc', 'tien_do', 'trang_thai', 'nhanvien_id'];
+    // Phải có 'ngay_ket_thuc' ở đây thì mới lưu được vào database
+    protected $fillable = [
+        'ten_du_an', 
+        'ngay_bat_dau', 
+        'ngay_ket_thuc', 
+        'tien_do', 
+        'trang_thai', 
+        'nhanvien_id'
+    ];
 
-    // Liên kết: Một dự án thuộc về một nhân viên quản lý
     public function nhanvien()
     {
-        return $this->belongsTo(NhanVien::class, 'nhanvien_id');
+        // Sử dụng withDefault để tránh lỗi web khi nhân viên bị xóa
+        return $this->belongsTo(NhanVien::class, 'nhanvien_id')->withDefault([
+            'hovaten' => 'N/A'
+        ]);
     }
 }
