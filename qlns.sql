@@ -692,7 +692,46 @@ INSERT INTO `users` (`id`, `nhanvien_id`, `email`, `email_verified_at`, `passwor
 --
 -- Chỉ mục cho các bảng đã đổ
 --
+-- --------------------------------------------------------
+-- Cấu trúc bảng cho bảng `kpis`
+-- --------------------------------------------------------
+CREATE TABLE `kpis` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `nhanvien_id` int(10) UNSIGNED NOT NULL,
+  `thang` int(11) NOT NULL,
+  `nam` int(11) NOT NULL,
+  `chi_so_kpi` double(8,2) NOT NULL,
+  `ghi_chu` text DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- --------------------------------------------------------
+-- Cấu trúc bảng cho bảng `projects`
+-- --------------------------------------------------------
+CREATE TABLE `projects` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `nhanvien_id` int(10) UNSIGNED NOT NULL,
+  `ten_du_an` varchar(255) NOT NULL,
+  `ngay_bat_dau` date NOT NULL,
+  `ngay_ket_thuc` date DEFAULT NULL,
+  `tien_do` int(11) NOT NULL DEFAULT 0,
+  `trang_thai` varchar(100) NOT NULL DEFAULT 'Đang thực hiện',
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Chỉ mục cho bảng `kpis`
+ALTER TABLE `kpis` ADD PRIMARY KEY (`id`), ADD KEY `fk_kpis_nhanvien_id` (`nhanvien_id`);
+
+-- Chỉ mục cho bảng `projects`
+ALTER TABLE `projects` ADD PRIMARY KEY (`id`), ADD KEY `fk_projects_nhanvien_id` (`nhanvien_id`);
+
+-- Tự động tăng cho bảng `kpis`
+ALTER TABLE `kpis` MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+-- Tự động tăng cho bảng `projects`
+ALTER TABLE `projects` MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 -- Chỉ mục cho bảng `bangcap`
 --
@@ -1068,12 +1107,20 @@ ALTER TABLE `thuongphat`
 ALTER TABLE `ungluong`
   ADD CONSTRAINT `fk_ungluong_nhanvien_id` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON UPDATE CASCADE;
 
+-- Các ràng buộc cho bảng `kpis`
+ALTER TABLE `kpis`
+  ADD CONSTRAINT `fk_kpis_nhan_vien` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;
+
+-- Các ràng buộc cho bảng `projects`
+ALTER TABLE `projects`
+  ADD CONSTRAINT `fk_projects_nhan_vien` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;
 --
 -- Các ràng buộc cho bảng `users`
 --
 ALTER TABLE `users`
   ADD CONSTRAINT `fk_users_nhanvien_id` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON UPDATE CASCADE;
 COMMIT;
+
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;

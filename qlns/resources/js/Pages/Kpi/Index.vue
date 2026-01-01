@@ -10,8 +10,11 @@
             <div>
               <label class="block mb-1 text-sm">Nhân viên:</label>
               <select v-model="form.nhanvien_id" class="w-full border p-2 rounded text-sm">
-                <option v-for="nv in nhanviens" :key="nv.id" :value="nv.id">{{ nv.ten }}</option>
-              </select>
+  <option value="" disabled>-- Chọn nhân viên --</option>
+  <option v-for="nv in nhanviens" :key="nv.id" :value="nv.id">
+    {{ nv.ten }}
+  </option>
+</select>
             </div>
             <div>
               <label class="block mb-1 text-sm">Chỉ số (%):</label>
@@ -52,6 +55,16 @@ export default {
     nhanviens: Array,
     kpis: Array,
   },
+  watch: {
+    // Mỗi khi danh sách kpis thay đổi (do server gửi về sau khi lưu), 
+    // nó sẽ tự động chạy lại hàm vẽ biểu đồ
+    kpis: {
+      handler() {
+        this.renderChart();
+      },
+      deep: true,
+    },
+  },
   data() {
     return {
       form: {
@@ -87,7 +100,7 @@ export default {
       this.chartInstance = new Chart(ctx, {
         type: 'bar',
         data: {
-          labels: this.kpis.map(k => k.nhanvien ? k.nhanvien.ten_nhanvien : 'N/A'),
+          labels: this.kpis.map(k => k.nhanvien ? k.nhanvien.hovaten : 'N/A'),
           datasets: [{
             label: 'KPI (%)',
             data: this.kpis.map(k => k.chi_so_kpi),

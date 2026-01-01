@@ -94,9 +94,16 @@ export default {
           label: 'Quản lý KPI',
           iconName: 'users',
           routeName: 'kpi',
-          requiredRoleGT: -1, // Cho phép quản lý và admin xem
+          requiredRoleGT: 0, // Cho phép quản lý và admin xem
           checkActive: (pageUrl) => pageUrl.startsWith('kpi'),
         },
+        {
+  label: 'Quản lý Dự án',
+  iconName: 'office-building', // Hoặc icon nào bạn thích
+  routeName: 'projects',
+  requiredRoleGT: -1,
+  checkActive: (pageUrl) => pageUrl.startsWith('projects'),
+},
         {
           label: 'Hợp Đồng', // Mục cha - chỉ để toggle
           iconName: 'hopdong',

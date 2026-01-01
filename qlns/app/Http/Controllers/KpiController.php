@@ -3,27 +3,25 @@
 namespace App\Http\Controllers;
 
 use App\Models\Kpi;
-use App\Models\NhanVien;
+use App\Models\NhanVien; // Phải có dòng này để lấy dữ liệu nhân viên
 use Illuminate\Http\Request;
 use Inertia\Inertia;
 
 class KpiController extends Controller
 {
-    // Hàm này để hiển thị trang nhập KPI
     public function index()
     {
         return Inertia::render('Kpi/Index', [
-            'nhanviens' => NhanVien::all()->map(function ($nv) {
-                return [
-                    'id' => $nv->id,
-                    'ten' => $nv->ten_nhanvien, // Tên cột này phải khớp với bảng nhanviens của bạn
-                ];
-            }),
-            'kpis' => Kpi::with('nhanvien')->orderBy('created_at', 'desc')->get(),
-        ]);
+        'nhanviens' => \App\Models\NhanVien::all()->map(function ($nv) {
+            return [
+                'id' => $nv->id,
+                'ten' => $nv->hovaten, 
+            ];
+        }),
+        'kpis' => \App\Models\Kpi::with('nhanvien')->orderBy('created_at', 'desc')->get(),
+    ]);
     }
 
-    // Hàm này để lưu dữ liệu khi nhấn nút "Lưu"
     public function store(Request $request)
     {
         $request->validate([

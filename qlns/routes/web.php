@@ -26,6 +26,7 @@ use App\Http\Controllers\NhanLuongController;
 use App\Http\Controllers\KhauTruController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\KpiController;
+use App\Http\Controllers\ProjectController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -651,5 +652,10 @@ Route::get('bangchamcong', [BangChamCongController::class, 'index'])
 Route::post('bangchamcong', [BangChamCongController::class, 'store'])
     ->name('bangchamcong.store')
     ->middleware('auth');
+// kpi
 Route::get('kpi', [KpiController::class, 'index'])->name('kpi')->middleware('auth');
 Route::post('kpi', [KpiController::class, 'store'])->name('kpi.store')->middleware('auth');
+
+// project
+Route::get('projects', [ProjectController::class, 'index'])->name('projects')->middleware('auth');
+Route::post('projects', [ProjectController::class, 'store'])->name('projects.store')->middleware('auth');
