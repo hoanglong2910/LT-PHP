@@ -23,21 +23,37 @@ class ProjectController extends Controller
     }
 
     public function store(Request $request)
-{
-    if (auth()->user()->role !== 'admin') {
-        return redirect()->back()->with('error', 'Bạn không có quyền tạo dự án!');
+    {
+        if (auth()->user()->role < 1) {
+            return redirect()->back()->with('error', 'Bạn không có quyền tạo dự án!');
+        }
+        $data = $request->validate([
+            'ten_du_an' => 'required|string|max:255',
+            'ngay_bat_dau' => 'required|date',
+            'ngay_ket_thuc' => 'nullable|date',
+            'nhanvien_id' => 'required|exists:nhanvien,id',
+            'tien_do' => 'required|integer|min:0|max:100',
+            'trang_thai' => 'required|string',
+        ]);
+
+        \App\Models\Project::create($data);
+
+        return redirect()->back()->with('success', 'Tạo dự án mới thành công!');
     }
-    $data = $request->validate([
-        'ten_du_an' => 'required|string|max:255',
-        'ngay_bat_dau' => 'required|date',
-        'ngay_ket_thuc' => 'nullable|date',
-        'nhanvien_id' => 'required|exists:nhanvien,id', 
-        'tien_do' => 'required|integer|min:0|max:100',
-        'trang_thai' => 'required|string',
-    ]);
+    public function update(Request $request, Project $project)
+    {
+        // Kiểm tra quyền: Chỉ Admin (2) và Quản lý (1) mới được sửa
+        if (auth()->user()->role < 1) {
+            return redirect()->back()->with('error', 'Bạn không có quyền cập nhật tiến độ!');
+        }
 
-    \App\Models\Project::create($data);
+        $data = $request->validate([
+            'tien_do' => 'required|integer|min:0|max:100',
+            'trang_thai' => 'required|string',
+        ]);
 
-    return redirect()->back()->with('success', 'Tạo dự án mới thành công!');
-}
+        $project->update($data);
+
+        return redirect()->back()->with('success', 'Cập nhật tiến độ thành công!');
+    }
 }

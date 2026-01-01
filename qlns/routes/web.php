@@ -659,3 +659,5 @@ Route::post('kpi', [KpiController::class, 'store'])->name('kpi.store')->middlewa
 // project
 Route::get('projects', [ProjectController::class, 'index'])->name('projects')->middleware('auth');
 Route::post('projects', [ProjectController::class, 'store'])->name('projects.store')->middleware('auth');
+// Thêm dòng này để tạo đường dẫn cập nhật dự án
+Route::put('projects/{project}', [ProjectController::class, 'update'])->name('projects.update')->middleware('auth');

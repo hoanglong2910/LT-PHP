@@ -3,9 +3,9 @@
     <div class="container mx-auto p-6 text-sm">
       <h1 class="text-2xl font-bold mb-6 text-gray-800">Danh sách Dự án & Tiến độ</h1>
 
-      <div v-if="$page.props.auth.user.role === 'admin'" 
+      <div v-if="$page.props.auth.user.role >= 1" 
            class="bg-white p-6 rounded-lg shadow mb-8 border-t-4 border-blue-500">
-        <h2 class="font-bold mb-4 text-lg text-blue-700">Tạo dự án mới (Dành cho Quản lý)</h2>
+        <h2 class="font-bold mb-4 text-lg text-blue-700">Tạo dự án mới</h2>
         <form @submit.prevent="submit" class="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div class="md:col-span-2">
             <label class="block font-medium mb-1 italic">Tên dự án:</label>
@@ -27,7 +27,7 @@
             <input v-model="form.ngay_ket_thuc" type="date" class="w-full border rounded p-2">
           </div>
           <div>
-            <label class="block font-medium mb-1 italic">Tiến độ hiện tại (%):</label>
+            <label class="block font-medium mb-1 italic">Tiến độ ban đầu (%):</label>
             <input v-model="form.tien_do" type="number" min="0" max="100" class="w-full border rounded p-2">
           </div>
           <div>
@@ -39,11 +39,10 @@
             </select>
           </div>
           <div class="md:col-span-2 text-right flex items-end justify-end">
-             <p class="text-xs text-gray-500 mr-4 mb-2">* Chế độ Quản trị viên</p>
              <button type="submit" 
                      style="background-color: #2563eb; color: #ffffff !important;"
                      class="px-8 py-2 rounded shadow hover:bg-blue-700 transition font-bold uppercase">
-                Lưu dự án
+                Lưu dự án mới
              </button>
           </div>
         </form>
@@ -66,14 +65,28 @@
 
           <div class="mt-4">
             <div class="flex justify-between text-xs font-bold mb-1">
-              <span>Tiến độ</span>
-              <span>{{ pj.tien_do }}%</span>
+              <span>Tiến độ hiện tại</span>
+              <div v-if="$page.props.auth.user.role >= 1" class="flex items-center">
+                <input v-model="pj.tien_do" type="number" min="0" max="100" class="w-16 border rounded px-1 mr-1 text-center"> %
+              </div>
+              <span v-else>{{ pj.tien_do }}%</span>
             </div>
-            <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner">
-              <div 
-                class="h-3 rounded-full transition-all duration-1000" 
-                :style="{ width: pj.tien_do + '%', backgroundColor: getProgressColor(pj.tien_do) }"
-              ></div>
+            
+            <div class="w-full bg-gray-200 rounded-full h-3 shadow-inner mb-4">
+              <div class="h-3 rounded-full transition-all duration-1000" 
+                   :style="{ width: pj.tien_do + '%', backgroundColor: getProgressColor(pj.tien_do) }">
+              </div>
+            </div>
+
+            <div v-if="$page.props.auth.user.role >= 1" class="flex gap-2">
+              <select v-model="pj.trang_thai" class="text-xs border rounded p-1 flex-1">
+                <option value="Đang thực hiện">Đang thực hiện</option>
+                <option value="Tạm dừng">Tạm dừng</option>
+                <option value="Hoàn thành">Hoàn thành</option>
+              </select>
+              <button @click="updateProgress(pj)" class="bg-green-600 text-white px-3 py-1 rounded text-xs font-bold hover:bg-green-700 transition">
+                Cập nhật
+              </button>
             </div>
           </div>
         </div>
@@ -102,8 +115,8 @@ export default {
   },
   methods: {
     submit() {
-      // Chặn thêm một lần nữa ở phía Javascript cho chắc chắn
-      if (this.$page.props.auth.user.role !== 'admin') {
+      // Kiểm tra quyền role số (1: Quản lý, 2: Admin)
+      if (this.$page.props.auth.user.role < 1) {
         alert('Bạn không có quyền thực hiện hành động này!');
         return;
       }
@@ -113,11 +126,21 @@ export default {
           this.form.ten_du_an = '';
           this.form.ngay_ket_thuc = '';
           this.form.tien_do = 0;
-          alert('Hệ thống đã cập nhật dự án mới!');
+          alert('Hệ thống đã thêm dự án mới!');
         },
         onError: (errors) => {
           alert('Lỗi: ' + Object.values(errors)[0]);
         }
+      })
+    },
+    updateProgress(pj) {
+      // Gửi yêu cầu cập nhật tiến độ lên server
+      this.$inertia.put(`/projects/${pj.id}`, {
+        tien_do: pj.tien_do,
+        trang_thai: pj.trang_thai
+      }, {
+        onSuccess: () => alert('Đã cập nhật tiến độ dự án thành công!'),
+        onError: (errors) => alert('Lỗi: ' + Object.values(errors)[0])
       })
     },
     getProgressColor(percent) {
