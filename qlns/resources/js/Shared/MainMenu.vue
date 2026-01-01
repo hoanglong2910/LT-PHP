@@ -88,6 +88,14 @@ export default {
             { label: 'Danh Sách Nhân Viên', routeName: 'nhanvien', iconName: 'users', requiredRoleGT: 0, checkActive: (pageUrl) => pageUrl.startsWith('nhanvien') },
             { label: 'Nghỉ Việc', routeName: 'nghiviec', iconName: 'nghiviec', requiredRoleGT: 0, checkActive: (pageUrl) => pageUrl.startsWith('nghiviec') },
           ],
+          
+        },
+        {
+          label: 'Quản lý KPI',
+          iconName: 'users',
+          routeName: 'kpi',
+          requiredRoleGT: -1, // Cho phép quản lý và admin xem
+          checkActive: (pageUrl) => pageUrl.startsWith('kpi'),
         },
         {
           label: 'Hợp Đồng', // Mục cha - chỉ để toggle
