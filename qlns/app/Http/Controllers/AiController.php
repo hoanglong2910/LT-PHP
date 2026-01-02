@@ -12,6 +12,78 @@ use Carbon\Carbon;
 
 class AiController extends Controller
 {
+    /**
+     * Cắt JSON object đầu tiên trong 1 chuỗi (phòng AI trả thêm chữ ngoài JSON)
+     */
+    private function extractJsonObject(string $text): ?string
+    {
+        $text = trim($text);
+        $text = str_replace(["```json", "```"], "", $text);
+        $text = trim($text);
+
+        // Bắt object { ... } theo kiểu "balanced braces" đơn giản
+        $start = strpos($text, '{');
+        if ($start === false) return null;
+
+        $level = 0;
+        $inString = false;
+        $escape = false;
+
+        for ($i = $start; $i < strlen($text); $i++) {
+            $ch = $text[$i];
+
+            if ($inString) {
+                if ($escape) {
+                    $escape = false;
+                } elseif ($ch === '\\') {
+                    $escape = true;
+                } elseif ($ch === '"') {
+                    $inString = false;
+                }
+                continue;
+            } else {
+                if ($ch === '"') {
+                    $inString = true;
+                    continue;
+                }
+                if ($ch === '{') $level++;
+                if ($ch === '}') {
+                    $level--;
+                    if ($level === 0) {
+                        return substr($text, $start, $i - $start + 1);
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Fallback: nếu AI không trả JSON chuẩn, cố gắng lấy 2 actions từ text
+     */
+    private function extractTwoActionsFromText(string $text): array
+    {
+        $text = trim($text);
+        $lines = preg_split("/\r\n|\n|\r/", $text);
+        $lines = array_map('trim', $lines);
+        $lines = array_filter($lines);
+
+        $actions = [];
+
+        foreach ($lines as $ln) {
+            // loại prefix kiểu: "- ", "• ", "1. ", "1) "
+            $ln = preg_replace('/^(\-|\•)\s*/u', '', $ln);
+            $ln = preg_replace('/^\d+[\.\)]\s*/u', '', $ln);
+            $ln = trim($ln);
+
+            if ($ln !== '') $actions[] = $ln;
+            if (count($actions) >= 2) break;
+        }
+
+        return array_slice($actions, 0, 2);
+    }
+
     public function evaluateAll(Request $request)
     {
         $thang = $request->thang ?? Carbon::now()->month;
@@ -27,6 +99,7 @@ class AiController extends Controller
         $ollamaModel = env('OLLAMA_MODEL', 'phi3');
 
         foreach ($nhanviens as $nv) {
+
             $kpi = Kpi::where('nhanvien_id', $nv->id)
                 ->where('thang', $thang)
                 ->where('nam', $nam)
@@ -35,10 +108,9 @@ class AiController extends Controller
             if (!$kpi) continue;
             $countHasKpi++;
 
-            // KPI value (int)
             $kpiValue = (int) $kpi->chi_so_kpi;
 
-            // ✅ CODE tự phân loại (AI không được quyết định type nữa)
+            // ✅ CODE tự phân loại (AI không được quyết định type/tag)
             if ($kpiValue >= 80) {
                 $type = 'KHEN_NGOI';
                 $tag  = 'KPI_CAO';
@@ -58,7 +130,6 @@ class AiController extends Controller
                 $projects = '';
             }
 
-            // ✅ Prompt: AI chỉ viết feedback + actions, trả JSON KHÔNG có type/tag
             $prompt =
                 "Bạn là trợ lý HR. Chỉ dùng đúng dữ liệu sau, KHÔNG bịa thêm.\n" .
                 "- Tên: {$nv->hovaten}\n" .
@@ -72,11 +143,14 @@ class AiController extends Controller
                 "- feedback: đúng 2 câu, tiếng Việt tự nhiên, lịch sự, bám KPI và dự án.\n" .
                 "- actions: đúng 2 gợi ý ngắn (tối đa 8 từ/gợi ý).\n";
 
-            // Gọi Ollama local
             $response = Http::timeout(120)->post(rtrim($ollamaUrl, '/') . "/api/generate", [
                 "model"  => $ollamaModel,
                 "prompt" => $prompt,
                 "stream" => false,
+
+                // ✅ ép JSON nếu Ollama/model hỗ trợ
+                "format" => "json",
+
                 "options" => [
                     "temperature" => 0.2,
                     "top_p" => 0.9
@@ -94,20 +168,34 @@ class AiController extends Controller
             }
 
             try {
-                $text = $response->json()['response'] ?? '';
-                $text = trim(str_replace(['```json', '```'], '', $text));
-                $result = json_decode($text, true);
+                $rawText = $response->json()['response'] ?? '';
+                $jsonStr = $this->extractJsonObject((string)$rawText);
 
-                if (!is_array($result) || !isset($result['feedback']) || !isset($result['actions']) || !is_array($result['actions'])) {
-                    throw new \Exception('Ollama trả về không đúng JSON (thiếu feedback/actions)');
+                $result = null;
+                if ($jsonStr) {
+                    $result = json_decode($jsonStr, true);
                 }
 
-                // Giới hạn độ dài cho gọn UI
-                $feedback = trim((string) $result['feedback']);
+                // Nếu decode fail => fallback
+                if (!is_array($result)) {
+                    // fallback cố lấy feedback/actions từ text
+                    $fallbackActions = $this->extractTwoActionsFromText((string)$rawText);
+                    $result = [
+                        'feedback' => (string)$rawText,
+                        'actions' => $fallbackActions,
+                    ];
+                }
+
+                // Chuẩn hoá actions
+                $feedback = trim((string) ($result['feedback'] ?? ''));
+                if ($feedback === '') {
+                    throw new \Exception('AI thiếu feedback');
+                }
                 $feedback = mb_substr($feedback, 0, 240);
 
-                // Lấy đúng 2 actions
-                $actions = array_values(array_filter(array_map('trim', $result['actions'])));
+                $actions = $result['actions'] ?? [];
+                if (!is_array($actions)) $actions = [];
+                $actions = array_values(array_filter(array_map('trim', $actions)));
                 $actions = array_slice($actions, 0, 2);
 
                 // Nếu AI trả thiếu actions thì bổ sung mặc định
@@ -115,15 +203,16 @@ class AiController extends Controller
                     $actions[] = $type === 'KHEN_NGOI' ? 'Duy trì tiến độ hiện tại' : 'Tập trung cải thiện hiệu suất';
                 }
 
-                // Lưu: type/tag do CODE quyết định
+                // ✅ LƯU (actions là array -> model cast sẽ tự json_encode)
                 AiEvaluation::updateOrCreate(
                     ['nhanvien_id' => $nv->id, 'thang' => $thang, 'nam' => $nam],
                     [
                         'noi_dung_danh_gia' => $feedback,
                         'loai_ket_qua' => $type,
-                        // Nếu DB bạn có cột tag/actions thì lưu thêm, còn không thì bỏ 2 dòng dưới:
+                        'actions' => $actions,
+
+                        // nếu DB có cột tag thì mở dòng này:
                         // 'tag' => $tag,
-                        // 'actions' => json_encode($actions, JSON_UNESCAPED_UNICODE)
                     ]
                 );
 

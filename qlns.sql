@@ -691,8 +691,10 @@ CREATE TABLE `ai_evaluations` (
   `nhanvien_id` int(10) UNSIGNED NOT NULL,
   `thang` int(11) NOT NULL,
   `nam` int(11) NOT NULL,
+  `chi_so_kpi` double(8,2) NOT NULL DEFAULT 0.00,
   `noi_dung_danh_gia` text NOT NULL,
   `loai_ket_qua` varchar(50) DEFAULT NULL,
+  `actions` longtext CHARACTER SET utf8mb4 COLLATE utf8mb4_bin DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT NULL,
   `updated_at` timestamp NULL DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -1143,9 +1145,7 @@ ALTER TABLE `projects`
 -- Các ràng buộc cho bảng `ai_evaluations`
 --
 ALTER TABLE `ai_evaluations`
-  ADD CONSTRAINT `fk_ai_evaluations_nhanvien_id`
-    FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`)
-    ON UPDATE CASCADE ON DELETE CASCADE;
+  ADD CONSTRAINT `fk_ai_evaluations_nhanvien_id` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;
 -- Các ràng buộc cho bảng `users`
 --
 ALTER TABLE `users`

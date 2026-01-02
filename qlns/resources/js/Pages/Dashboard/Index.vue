@@ -2,13 +2,15 @@
   <div>
     <h1 class="mb-8 font-bold text-3xl">Trang Chủ</h1>
 
-    <div v-if="$page.props.flash.error" class="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 shadow-md flex justify-between items-center">
-        <span>{{ $page.props.flash.error }}</span>
-        <button @click="$page.props.flash.error = null" class="text-red-900 font-bold px-2">X</button>
+    <div v-if="$page.props.flash.error"
+      class="mb-6 p-4 bg-red-100 border-l-4 border-red-500 text-red-700 shadow-md flex justify-between items-center">
+      <span>{{ $page.props.flash.error }}</span>
+      <button @click="$page.props.flash.error = null" class="text-red-900 font-bold px-2">X</button>
     </div>
 
-    <div v-if="$page.props.flash.success" class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 shadow-md">
-        {{ $page.props.flash.success }}
+    <div v-if="$page.props.flash.success"
+      class="mb-6 p-4 bg-green-100 border-l-4 border-green-500 text-green-700 shadow-md">
+      {{ $page.props.flash.success }}
     </div>
 
     <div v-if="currentUserRole === 1 || currentUserRole === 2">
@@ -40,38 +42,47 @@
       </div>
 
       <div class="mb-10 bg-white rounded-lg shadow-md p-6">
-        <h2 class="mb-4 text-2xl font-semibold text-gray-700">Tiến Trình Thanh Toán Lương (Tháng {{ currentMonth }}/{{ currentYear }})</h2>
+        <h2 class="mb-4 text-2xl font-semibold text-gray-700">Tiến Trình Thanh Toán Lương (Tháng {{ currentMonth }}/{{
+          currentYear }})</h2>
         <div class="mb-4">
-          <p class="text-md text-gray-600">Tổng số nhân viên công ty: <span class="font-semibold">{{ tongSoNhanVienDangLamViec }}</span></p>
-          <p class="text-md text-gray-600">Số lượng nhân viên đã thanh toán lương: <span class="font-semibold text-green-600">{{ soNhanVienDaThanhToanLuong }}</span></p>
+          <p class="text-md text-gray-600">Tổng số nhân viên công ty: <span class="font-semibold">{{
+              tongSoNhanVienDangLamViec }}</span></p>
+          <p class="text-md text-gray-600">Số lượng nhân viên đã thanh toán lương: <span
+              class="font-semibold text-green-600">{{ soNhanVienDaThanhToanLuong }}</span></p>
         </div>
         <div class="w-full bg-gray-200 rounded-full h-6 mb-4">
-          <div class="bg-indigo-600 h-6 rounded-full text-xs font-medium text-white text-center py-1 leading-none" :style="{ width: paymentProgressPercentage + '%' }">
+          <div class="bg-indigo-600 h-6 rounded-full text-xs font-medium text-white text-center py-1 leading-none"
+            :style="{ width: paymentProgressPercentage + '%' }">
             {{ paymentProgressPercentage.toFixed(1) }}%
           </div>
         </div>
         <div class="mb-4">
-          <p class="text-md text-gray-600">Tổng tiền đã ứng lương tháng này: <span class="font-semibold text-orange-600">{{ formatCurrency(tongTienUngLuongThangNay) }}</span></p>
+          <p class="text-md text-gray-600">Tổng tiền đã ứng lương tháng này: <span
+              class="font-semibold text-orange-600">{{ formatCurrency(tongTienUngLuongThangNay) }}</span></p>
         </div>
         <div class="flex flex-wrap gap-4">
-          <inertia-link :href="route('nhanluong.index')" class="px-10 py-2 bg-gray-200 text-black rounded-md hover:bg-indigo-600 text-sm hover:text-white font-medium">
+          <inertia-link :href="route('nhanluong.index')"
+            class="px-10 py-2 bg-gray-200 text-black rounded-md hover:bg-indigo-600 text-sm hover:text-white font-medium">
             Chi tiết Thanh toán Lương
           </inertia-link>
-          
+
           <inertia-link method="post" as="button" :href="route('ai.evaluate')" :data="{ thang: currentMonth }"
             class="px-6 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm font-medium transition-all flex items-center shadow-lg">
             <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z">
+              </path>
             </svg>
             Chạy Đánh Giá AI (Tháng {{ currentMonth }})
           </inertia-link>
 
-          <inertia-link :href="route('ungluong.index')" class="px-10 py-2 bg-gray-200 text-black rounded-md hover:bg-indigo-600 text-sm hover:text-white font-medium">
+          <inertia-link :href="route('ungluong.index')"
+            class="px-10 py-2 bg-gray-200 text-black rounded-md hover:bg-indigo-600 text-sm hover:text-white font-medium">
             Chi tiết Ứng Lương
           </inertia-link>
         </div>
       </div>
 
+      <!-- ✅ ĐÃ THAY THẾ TOÀN BỘ KHỐI AI EVALUATIONS BẰNG CODE MỚI -->
       <div v-if="aiEvaluations && aiEvaluations.length > 0" class="mb-10 bg-white rounded-lg shadow-md p-6 border-t-4 border-indigo-500">
         <h2 class="mb-4 text-2xl font-semibold text-indigo-700 flex items-center text-uppercase">
           <svg class="w-6 h-6 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -79,19 +90,42 @@
           </svg>
           Kết Quả Phân Tích Từ AI (Tháng {{ currentMonth }})
         </h2>
+
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div v-for="evaluation in aiEvaluations" :key="evaluation.id" class="p-4 border-l-4 rounded bg-gray-50 shadow-sm"
-            :class="evaluation.loai_ket_qua === 'Khen ngợi' ? 'border-green-500' : 'border-red-500'">
-            <div class="flex justify-between items-start">
-              <span class="font-bold text-gray-800">{{ evaluation.nhanvien.hovaten }}</span>
-              <span :class="evaluation.loai_ket_qua === 'Khen ngợi' ? 'text-green-600' : 'text-red-600'" class="text-xs font-bold uppercase p-1 bg-white rounded border">
-                {{ evaluation.loai_ket_qua }}
+          <div v-for="evaluation in aiEvaluations" :key="evaluation.id"
+               class="p-4 border-l-4 rounded shadow-sm transition hover:shadow-md"
+               :class="evaluation.loai_ket_qua === 'KHEN_THUONG' ? 'border-green-500 bg-green-50' : 'border-red-500 bg-red-50'">
+
+            <div class="flex justify-between items-start mb-2">
+              <div>
+                 <span class="font-bold text-gray-800 text-lg">
+                   {{ evaluation.nhanvien ? evaluation.nhanvien.hovaten : 'Nhân viên' }}
+                 </span>
+                 <div class="text-xs text-gray-500 font-semibold">
+                   KPI Đạt: {{ evaluation.chi_so_kpi }}%
+                 </div>
+              </div>
+              <span :class="evaluation.loai_ket_qua === 'KHEN_THUONG' ? 'text-green-700 bg-green-200' : 'text-red-700 bg-red-200'"
+                    class="text-xs font-bold uppercase px-2 py-1 rounded border border-black border-opacity-10">
+                {{ evaluation.loai_ket_qua === 'KHEN_THUONG' ? 'Khen Thưởng' : 'Nhắc Nhở' }}
               </span>
             </div>
-            <p class="text-sm text-gray-600 mt-2 italic">"{{ evaluation.noi_dung_danh_gia }}"</p>
+
+            <p class="text-sm text-gray-700 italic mb-3">"{{ evaluation.noi_dung_danh_gia }}"</p>
+
+            <div v-if="evaluation.actions && evaluation.actions.length > 0" class="mt-3 pt-3 border-t border-gray-200 border-dashed">
+                <p class="text-xs font-bold text-gray-500 uppercase mb-1">Đề xuất hành động:</p>
+                <ul class="list-disc list-inside text-sm font-medium"
+                    :class="evaluation.loai_ket_qua === 'KHEN_THUONG' ? 'text-green-800' : 'text-red-800'">
+                    <li v-for="(action, index) in evaluation.actions" :key="index">
+                        {{ action }}
+                    </li>
+                </ul>
+            </div>
           </div>
         </div>
       </div>
+      <!-- ✅ HẾT PHẦN THAY THẾ -->
 
       <div class="mb-10 bg-white rounded-lg shadow-md p-6">
         <h2 class="mb-4 text-2xl font-semibold text-gray-700">Số Lượng Nhân Viên Theo Phòng Ban</h2>
@@ -99,7 +133,8 @@
           <CustomBarChart v-if="chartDataReady.nvTheoPhongBan" :chart-data="nhanVienTheoPhongBanComputedChartData"
             :chart-options="barChartOptions" chart-id="nv-phong-ban-chart-standalone"
             dataset-id-key="nvphongban-standalone" />
-          <p v-else class="text-gray-500 italic">Không có dữ liệu nhân viên theo phòng ban hoặc dữ liệu chưa sẵn sàng.</p>
+          <p v-else class="text-gray-500 italic">Không có dữ liệu nhân viên theo phòng ban hoặc dữ liệu chưa sẵn sàng.
+          </p>
         </div>
       </div>
 
@@ -111,12 +146,14 @@
               class="py-2 px-1 border-b border-gray-100 last:border-b-0">
               <div class="flex items-center justify-between">
                 <p class="text-sm font-medium text-gray-800">{{ nv.hovaten }}</p>
-                <p class="text-xs text-gray-600 bg-sky-100 text-sky-700 px-2 py-1 rounded">Ngày: {{ nv.ngaysinh_formatted }}</p>
+                <p class="text-xs text-gray-600 bg-sky-100 text-sky-700 px-2 py-1 rounded">Ngày: {{
+                  nv.ngaysinh_formatted }}</p>
               </div>
             </div>
           </div>
           <div v-if="canShowMoreBirthdays" class="mt-4 text-center">
-            <button @click="showMoreBirthdays" class="text-sm text-indigo-600 hover:text-indigo-800 font-medium focus:outline-none">
+            <button @click="showMoreBirthdays"
+              class="text-sm text-indigo-600 hover:text-indigo-800 font-medium focus:outline-none">
               Xem thêm (còn {{ nhanVienSinhNhatThangNay.length - birthdayVisibleItemsCount }} người)
             </button>
           </div>
@@ -127,24 +164,48 @@
       <div class="mb-10 bg-white rounded-lg shadow-md p-6">
         <h2 class="mb-4 text-2xl font-semibold text-gray-700">Thống Kê & Báo Cáo Chi Tiết</h2>
         <div class="mb-6 flex flex-wrap gap-3">
-          <button @click="selectDisplayType('bangCap')" :class="selectedDisplayType === 'bangCap' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'" class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Theo Bằng Cấp</button>
-          <button @click="selectDisplayType('chuyenMon')" :class="selectedDisplayType === 'chuyenMon' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'" class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Theo Chuyên Môn</button>
-          <button @click="selectDisplayType('ngoaiNgu')" :class="selectedDisplayType === 'ngoaiNgu' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'" class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Theo Ngoại Ngữ</button>
-          <button @click="selectDisplayType('topThuong')" :class="selectedDisplayType === 'topThuong' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'" class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Top 3 Thưởng</button>
-          <button @click="selectDisplayType('topPhat')" :class="selectedDisplayType === 'topPhat' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'" class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Top 3 Phạt</button>
+          <button @click="selectDisplayType('bangCap')"
+            :class="selectedDisplayType === 'bangCap' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'"
+            class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Theo Bằng
+            Cấp</button>
+          <button @click="selectDisplayType('chuyenMon')"
+            :class="selectedDisplayType === 'chuyenMon' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'"
+            class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Theo Chuyên
+            Môn</button>
+          <button @click="selectDisplayType('ngoaiNgu')"
+            :class="selectedDisplayType === 'ngoaiNgu' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'"
+            class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Theo Ngoại
+            Ngữ</button>
+          <button @click="selectDisplayType('topThuong')"
+            :class="selectedDisplayType === 'topThuong' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'"
+            class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Top 3
+            Thưởng</button>
+          <button @click="selectDisplayType('topPhat')"
+            :class="selectedDisplayType === 'topPhat' ? 'bg-indigo-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'"
+            class="px-4 py-2 rounded-md font-medium text-sm shadow hover:shadow-lg transition-shadow">Top 3
+            Phạt</button>
         </div>
 
         <div class="mt-6">
           <div v-if="selectedDisplayType === 'bangCap'">
-            <CustomPieChart v-if="chartDataReady.bangCap" :chart-data="bangCapChartData" :chart-options="chartOptionsWithDataLabels" chart-id="bang-cap-chart-selected" dataset-id-key="bangcap-selected" :width="400" :height="300" style="position: relative; max-height:350px; width:100%" />
+            <CustomPieChart v-if="chartDataReady.bangCap" :chart-data="bangCapChartData"
+              :chart-options="chartOptionsWithDataLabels" chart-id="bang-cap-chart-selected"
+              dataset-id-key="bangcap-selected" :width="400" :height="300"
+              style="position: relative; max-height:350px; width:100%" />
             <p v-else class="text-gray-500 italic">Không có dữ liệu bằng cấp.</p>
           </div>
           <div v-if="selectedDisplayType === 'chuyenMon'">
-            <CustomPieChart v-if="chartDataReady.chuyenMon" :chart-data="chuyenMonChartData" :chart-options="chartOptionsWithDataLabels" chart-id="chuyen-mon-chart-selected" dataset-id-key="chuyenmon-selected" :width="400" :height="300" style="position: relative; max-height:350px; width:100%" />
+            <CustomPieChart v-if="chartDataReady.chuyenMon" :chart-data="chuyenMonChartData"
+              :chart-options="chartOptionsWithDataLabels" chart-id="chuyen-mon-chart-selected"
+              dataset-id-key="chuyenmon-selected" :width="400" :height="300"
+              style="position: relative; max-height:350px; width:100%" />
             <p v-else class="text-gray-500 italic">Không có dữ liệu chuyên môn.</p>
           </div>
           <div v-if="selectedDisplayType === 'ngoaiNgu'">
-            <CustomPieChart v-if="chartDataReady.ngoaiNgu" :chart-data="ngoaiNguChartData" :chart-options="chartOptionsWithDataLabels" chart-id="ngoai-ngu-chart-selected" dataset-id-key="ngoaingu-selected" :width="400" :height="300" style="position: relative; max-height:350px; width:100%" />
+            <CustomPieChart v-if="chartDataReady.ngoaiNgu" :chart-data="ngoaiNguChartData"
+              :chart-options="chartOptionsWithDataLabels" chart-id="ngoai-ngu-chart-selected"
+              dataset-id-key="ngoaingu-selected" :width="400" :height="300"
+              style="position: relative; max-height:350px; width:100%" />
             <p v-else class="text-gray-500 italic">Không có dữ liệu ngoại ngữ.</p>
           </div>
 
@@ -154,9 +215,13 @@
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50 uppercase">
                   <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hạng</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nhân Viên</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số Lần</th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hạng</th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nhân Viên
+                    </th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số Lần</th>
                     <th scope="col" class="relative px-6 py-3"></th>
                   </tr>
                 </thead>
@@ -166,7 +231,9 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ item.nhanvien.hovaten }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ item.so_lan_thuong }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-uppercase font-bold">
-                      <inertia-link :href="route('thuongphat.index', { search_nhanvien: item.nhanvien.hovaten, search_loai: 'thuong' })" class="text-indigo-600 hover:text-indigo-900">Chi tiết</inertia-link>
+                      <inertia-link
+                        :href="route('thuongphat.index', { search_nhanvien: item.nhanvien.hovaten, search_loai: 'thuong' })"
+                        class="text-indigo-600 hover:text-indigo-900">Chi tiết</inertia-link>
                     </td>
                   </tr>
                 </tbody>
@@ -181,9 +248,13 @@
               <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50 uppercase">
                   <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hạng</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nhân Viên</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số Lần</th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hạng</th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nhân Viên
+                    </th>
+                    <th scope="col"
+                      class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Số Lần</th>
                     <th scope="col" class="relative px-6 py-3"></th>
                   </tr>
                 </thead>
@@ -193,7 +264,9 @@
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ item.nhanvien.hovaten }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{{ item.so_lan_phat }}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium text-uppercase font-bold">
-                      <inertia-link :href="route('thuongphat.index', { search_nhanvien: item.nhanvien.hovaten, search_loai: 'phat' })" class="text-indigo-600 hover:text-indigo-900">Chi tiết</inertia-link>
+                      <inertia-link
+                        :href="route('thuongphat.index', { search_nhanvien: item.nhanvien.hovaten, search_loai: 'phat' })"
+                        class="text-indigo-600 hover:text-indigo-900">Chi tiết</inertia-link>
                     </td>
                   </tr>
                 </tbody>
@@ -222,6 +295,7 @@
     </div>
   </div>
 </template>
+
 
 <script>
 import Layout from '@/Shared/Layout'
