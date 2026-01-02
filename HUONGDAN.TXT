@@ -96,3 +96,13 @@ cai them
 npm install chart.js vue-chartjs
 
 npm install --save-dev vue-template-compiler@2.7.16
+
+
+Cài đặt để chạy model AI 
+Cài Ollama (1 lần trên máy)
+Mở PowerShell:
+ollama pull phi3
+Laravel chỉ cần gọi tới Ollama
+Trong .env có:
+OLLAMA_URL=http://127.0.0.1:11434
+OLLAMA_MODEL=phi3

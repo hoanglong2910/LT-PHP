@@ -88,9 +88,9 @@ class NhanVien extends Model
     {
         return $this->belongsTo(MucLuong::class, 'phucap_id', 'id');
     }
-    public function phucapRelation() 
+    public function phucapRelation()
     {
-    return $this->belongsTo(PhuCap::class, 'phucap_id', 'id');
+        return $this->belongsTo(PhuCap::class, 'phucap_id', 'id');
     }
     public function ngoaingu()
     {
@@ -120,10 +120,10 @@ class NhanVien extends Model
     public function isNgayCong($id, $ngaycong)
     {
         return $this->join('chamcong as c', 'nhanvien.id', '=', 'c.nhanvien_id')
-        ->where('c.created_at', $ngaycong . ' 00:00:00')
-        ->where('nhanvien.id', $id)
-        ->select('nhanvien.id')
-        ->first();
+            ->where('c.created_at', $ngaycong . ' 00:00:00')
+            ->where('nhanvien.id', $id)
+            ->select('nhanvien.id')
+            ->first();
     }
 
     public function ngayCongList(string $ngaycong)
@@ -131,10 +131,10 @@ class NhanVien extends Model
         $list = [];
         $temp = [];
         $nhanVien = $this->join('chamcong as c', 'nhanvien.id', '=', 'c.nhanvien_id')
-        ->where('c.created_at', $ngaycong . ' 00:00:00')
-        ->orderBy('nhanvien.id', 'ASC')
-        ->select('nhanvien.id')
-        ->get();
+            ->where('c.created_at', $ngaycong . ' 00:00:00')
+            ->orderBy('nhanvien.id', 'ASC')
+            ->select('nhanvien.id')
+            ->get();
         foreach ($nhanVien as $nv)
             $list[$nv->id - 1] = true;
         if (count($list) > 0)
@@ -143,29 +143,29 @@ class NhanVien extends Model
         return $temp;
     }
     // Trong NhanVien.php
-    public function phongBanQuaPhuCap() 
+    public function phongBanQuaPhuCap()
     {
-    
+
         return $this->hasOneThrough(
-            PhongBan::class, 
-            PhuCap::class,   
-            'id',            
-            'id',            
-            'phucap_id',     
-            'phongban_id'    
+            PhongBan::class,
+            PhuCap::class,
+            'id',
+            'id',
+            'phucap_id',
+            'phongban_id'
         );
     }
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['search'] ?? null, function ($query, $search) {
             $query->join('users as u', 'nhanvien.id', '=', 'u.nhanvien_id')
-                  ->where('nhanvien.hovaten', 'like', '%'.$search.'%')
-                  ->orWhere('nhanvien.sdt', 'like', '%'.$search.'%')
-                  ->orWhere('u.email', 'like', '%'.$search.'%');
+                ->where('nhanvien.hovaten', 'like', '%' . $search . '%')
+                ->orWhere('nhanvien.sdt', 'like', '%' . $search . '%')
+                ->orWhere('u.email', 'like', '%' . $search . '%');
         })->when($filters['gioitinh'] ?? null, function ($query, $gioitinh) {
-                $query->where('gioitinh', $gioitinh === 'nam' ? false : true);
+            $query->where('gioitinh', $gioitinh === 'nam' ? false : true);
         })->when($filters['trangthai'] ?? null, function ($query, $trangthai) {
-                $query->where('trangthai', $trangthai === 'danghilam' ? false : true);
+            $query->where('trangthai', $trangthai === 'danghilam' ? false : true);
         })->when($filters['trashed'] ?? null, function ($query, $trashed) {
             if ($trashed === 'with') {
                 $query->withTrashed();
@@ -177,5 +177,9 @@ class NhanVien extends Model
     public function projects()
     {
         return $this->hasMany(Project::class, 'nhanvien_id');
+    }
+    public function aiEvaluations()
+    {
+        return $this->hasMany(AiEvaluation::class, 'nhanvien_id');
     }
 }

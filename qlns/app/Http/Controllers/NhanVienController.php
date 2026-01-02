@@ -11,6 +11,7 @@ use App\Models\NhanVien;
 use App\Models\PhuCap;
 use App\Models\NgoaiNgu;
 use App\Models\TonGiao;
+use App\Models\AiEvaluation; // Đã thêm dòng này
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Facades\Request;
@@ -196,7 +197,12 @@ class NhanVienController extends Controller
                 'ngaybd' => $hopdong->ngaybd,
                 'ngaykt' => $hopdong->ngaykt ?? 'Vô thời hạn',
                 'loaihopdong' => $hopdong->loaihopdong
-            ])
+            ]),
+            // Đã thêm phần lấy dữ liệu đánh giá AI ở đây
+            'ai_evaluations' => AiEvaluation::where('nhanvien_id', $nhanvien->id)
+                ->orderBy('nam', 'desc')
+                ->orderBy('thang', 'desc')
+                ->get()
         ]);
     }
 

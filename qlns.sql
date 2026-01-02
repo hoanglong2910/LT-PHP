@@ -1,11 +1,4 @@
--- phpMyAdmin SQL Dump
--- version 5.2.1
--- https://www.phpmyadmin.net/
---
--- Máy chủ: 127.0.0.1
--- Thời gian đã tạo: Th5 12, 2025 lúc 07:55 AM
--- Phiên bản máy phục vụ: 10.4.32-MariaDB
--- Phiên bản PHP: 8.2.12
+
 
 SET SQL_MODE = 'NO_AUTO_VALUE_ON_ZERO';
 START TRANSACTION;
@@ -689,6 +682,38 @@ INSERT INTO `users` (`id`, `nhanvien_id`, `email`, `email_verified_at`, `passwor
 (22, 22, 'johns.maegan@example.org', '2025-05-08 23:24:55', '$2y$10$7ZkjJ6jZikLX4zAHMOVw7O9FpDiSE7f4HbJOupJQ83t6kjUmlL4VO', 0, '7jmNk6HGaQ', '2025-05-08 23:24:55', '2025-05-08 23:24:55', NULL),
 (23, 23, 'gaylord.ebert@example.org', '2025-05-08 23:24:55', '$2y$10$hRIN1jdnx4dXGcI/pSz2SecfSdITjjDYYdhGUAVBDSsEl7NzbxLyG', 0, '5penbgmeMa', '2025-05-08 23:24:55', '2025-05-08 23:24:55', NULL);
 
+
+-- --------------------------------------------------------
+-- Cấu trúc bảng cho bảng `ai_evaluations`
+-- --------------------------------------------------------
+CREATE TABLE `ai_evaluations` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `nhanvien_id` int(10) UNSIGNED NOT NULL,
+  `thang` int(11) NOT NULL,
+  `nam` int(11) NOT NULL,
+  `noi_dung_danh_gia` text NOT NULL,
+  `loai_ket_qua` varchar(50) DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+--
+-- Chỉ mục cho bảng `ai_evaluations`
+--
+ALTER TABLE `ai_evaluations`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `uniq_ai_evaluations_nhanvien_thang_nam` (`nhanvien_id`,`thang`,`nam`),
+  ADD KEY `fk_ai_evaluations_nhanvien_id` (`nhanvien_id`);
+--
+-- AUTO_INCREMENT cho bảng `ai_evaluations`
+--
+ALTER TABLE `ai_evaluations`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
+--
+
+
+
+
+
 --
 -- Chỉ mục cho các bảng đã đổ
 --
@@ -1115,6 +1140,12 @@ ALTER TABLE `kpis`
 ALTER TABLE `projects`
   ADD CONSTRAINT `fk_projects_nhan_vien` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;
 --
+-- Các ràng buộc cho bảng `ai_evaluations`
+--
+ALTER TABLE `ai_evaluations`
+  ADD CONSTRAINT `fk_ai_evaluations_nhanvien_id`
+    FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`)
+    ON UPDATE CASCADE ON DELETE CASCADE;
 -- Các ràng buộc cho bảng `users`
 --
 ALTER TABLE `users`
@@ -1126,22 +1157,3 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 -- --------------------------------------------------------
--- Cấu trúc bảng cho bảng `ai_evaluations`
--- --------------------------------------------------------
-
-CREATE TABLE `ai_evaluations` (
-  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
-  `nhanvien_id` int(10) UNSIGNED NOT NULL,
-  `thang` int(11) NOT NULL,
-  `nam` int(11) NOT NULL,
-  `noi_dung_danh_gia` text NOT NULL, -- Lưu lời nhận xét chi tiết từ AI
-  `loai_ket_qua` varchar(50) DEFAULT NULL, -- 'Khen ngợi' hoặc 'Nhắc nhở' do AI tự phân loại
-  `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL,
-  PRIMARY KEY (`id`),
-  KEY `fk_ai_evaluations_nhanvien_id` (`nhanvien_id`),
-  -- Thiết lập khóa ngoại để liên kết với bảng nhân viên, tự động xóa nếu nhân viên bị xóa khỏi hệ thống
-  CONSTRAINT `fk_ai_evaluations_nhanvien_id` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-COMMIT;

@@ -198,9 +198,10 @@
     </div>
     <div v-if="$page.props.auth.user.role > 0" class="mt-6 bg-white rounded shadow overflow-x-auto">
         <table class="w-full whitespace-nowrap">
-        <tr class="text-left font-bold">
+        < class="text-left font-bold">
           <th class="px-6 pt-6 pb-4">Mã hợp đồng</th>
           <th class="px-6 pt-6 pb-4">Loại hợp đồng</th>
+          <th class="px-6 pt-6 pb-4 text-indigo-600">Đánh giá từ AI</th> 
           <th class="px-6 pt-6 pb-4">Ngày bắt đầu</th>
           <th class="px-6 pt-6 pb-4" colspan="2">Ngày kết thúc</th>
         </tr>
