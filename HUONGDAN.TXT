@@ -1,0 +1,98 @@
+Giai đoạn 1: Chuẩn bị Môi trường Phát triển
+
+
+PHP:
+
+Cài đặt: Sử dụng XAMPP. Đảm bảo phiên bản PHP tương thích với dự án (thường là PHP 7.3+ hoặc 8.x).
+Kiểm tra: php -v
+
+cho XAMPP:
+Mở tệp C:\xampp\php\php.ini.
+Tìm dòng extension=gd (hoặc ;extension=gd).
+Xóa dấu chấm phẩy (;) ở đầu dòng (nếu có) để thành extension=gd.
+Lưu tệp php.ini.
+Khởi động lại Apache từ XAMPP Control Panel.
+Composer:
+
+Cài đặt: Tải từ getcomposer.org.
+Kiểm tra: composer --version
+Node.js và NPM:
+
+Cài đặt: Tải phiên bản LTS từ nodejs.org (NPM đi kèm với Node.js).
+Kiểm tra: node -v và npm -v
+Cơ sở dữ liệu (CSDL):
+
+Cài đặt: MySQL (thường đi kèm XAMPP)
+Hành động: Tạo một CSDL trống cho dự án (tên là qlns).
+chạy file qlns.sql 
+
+Giai đoạn 2: Các bước Thực hiện Cài đặt Dự án và Xử lý Lỗi
+Sao chép và Cấu hình tệp .env:
+
+Lệnh: (trong thư mục gốc dự án)
+PowerShell
+
+cp .env.example .env
+
+Chỉnh sửa tệp .env: Mở tệp .env và cập nhật các thông tin sau:
+Ini, TOML
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=ten_database_cua_ban // THAY BẰNG TÊN DATABASE BẠN ĐÃ TẠO
+DB_USERNAME=root                 // THAY BẰNG USERNAME CSDL CỦA BẠN
+DB_PASSWORD=mat_khau_csdl        // THAY BẰNG MẬT KHẨU CSDL (để trống nếu không có)
+
+APP_NAME="Quan Ly Nhan Su"
+APP_ENV=local
+APP_KEY= // Sẽ được tạo ở bước sau
+APP_DEBUG=true
+APP_URL=http://localhost // Hoặc http://127.0.0.1:8000
+
+Cài đặt các gói phụ thuộc PHP (composer install):
+
+Lệnh:
+PowerShell
+
+Xóa tệp composer.lock.
+Xóa thư mục vendor (nếu có).
+Chạy  composer install.
+Cài đặt các gói phụ thuộc JavaScript (npm install):
+
+Lệnh:
+PowerShell
+
+npm install
+
+Biên dịch tài sản frontend (npm run dev):
+
+Lệnh:
+PowerShell
+
+npm run dev
+
+Lệnh: (trong cửa sổ PowerShell MỚI)
+PowerShell
+
+php artisan key:generate
+Kết quả: Application key set successfully. (Khóa APP_KEY được cập nhật trong .env).
+
+php artisan serve
+Kết quả: Server bắt đầu chạy, thường ở địa chỉ http://127.0.0.1:8000.
+INFO  Server running on [http://127.0.0.1:8000].
+Lưu ý quan trọng: Giữ cửa sổ PowerShell đang chạy php artisan serve này MỞ.
+Truy cập Ứng dụng:
+
+Mở trình duyệt web (Chrome, Firefox, v.v.).
+Đi đến địa chỉ: http://127.0.0.1:8000 (hoặc http://localhost:8000).
+Tóm tắt các cửa sổ Terminal đang chạy (sau khi hoàn tất):
+
+Cửa sổ PowerShell 1: Chạy npm run dev (biên dịch frontend).
+Cửa sổ PowerShell 2: Chạy php artisan serve (chạy server backend Laravel).
+Cả hai cần được giữ mở để ứng dụng hoạt động
+
+cai them
+npm install chart.js vue-chartjs
+
+npm install --save-dev vue-template-compiler@2.7.16
