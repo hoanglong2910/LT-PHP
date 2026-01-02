@@ -712,7 +712,35 @@ ALTER TABLE `ai_evaluations`
   MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 --
 
+-- --------------------------------------------------------
+-- Cấu trúc bảng cho bảng `ai_notifications`
+-- --------------------------------------------------------
+CREATE TABLE `ai_notifications` (
+  `id` int(10) UNSIGNED NOT NULL,
+  `nhanvien_id` int(10) UNSIGNED NOT NULL,
+  `thang` int(11) NOT NULL,
+  `nam` int(11) NOT NULL,
+  `type` varchar(30) NOT NULL DEFAULT 'INFO',
+  `title` varchar(150) NOT NULL,
+  `message` text NOT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+--
+-- Chỉ mục cho bảng `ai_notifications`
+--
+ALTER TABLE `ai_notifications`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_ai_notifications_nhanvien_id` (`nhanvien_id`),
+  ADD KEY `idx_ai_notifications_thang_nam` (`thang`,`nam`);
+
+--
+-- AUTO_INCREMENT cho bảng `ai_notifications`
+--
+ALTER TABLE `ai_notifications`
+  MODIFY `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT;
 
 
 
@@ -1146,6 +1174,15 @@ ALTER TABLE `projects`
 --
 ALTER TABLE `ai_evaluations`
   ADD CONSTRAINT `fk_ai_evaluations_nhanvien_id` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON UPDATE CASCADE ON DELETE CASCADE;
+
+--
+-- Ràng buộc khóa ngoại cho bảng `ai_notifications`
+--
+ALTER TABLE `ai_notifications`
+  ADD CONSTRAINT `fk_ai_notifications_nhanvien_id`
+  FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`)
+  ON UPDATE CASCADE ON DELETE CASCADE;
+
 -- Các ràng buộc cho bảng `users`
 --
 ALTER TABLE `users`
