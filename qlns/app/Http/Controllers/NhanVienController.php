@@ -19,17 +19,17 @@ use Illuminate\Support\Facades\URL;
 use Inertia\Inertia;
 use App\Imports\NhanVienImport;
 use App\Exports\NhanVienExport;
-use Excel;
+use Maatwebsite\Excel\Facades\Excel;
 
 class NhanVienController extends Controller
 {
     public function index()
     {
         return Inertia::render('NhanVien/Index', [
-            'filters' => Request::all('search', 'trashed', 'gioitinh', 'trangthai'),
+            'filters' => Request::all(['search', 'trashed', 'gioitinh', 'trangthai']),
             'nhanvien' => Auth::user()->nhanvien
                 ->latest('nhanvien.created_at')
-                ->filter(Request::only('search', 'trashed', 'gioitinh', 'trangthai'))
+                ->filter(Request::only([ 'search', 'trashed', 'gioitinh', 'trangthai']))
                 ->paginate(10)
                 ->withQueryString()
                 ->through(fn ($nhanvien) => [
