@@ -1125,3 +1125,23 @@ COMMIT;
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
+-- --------------------------------------------------------
+-- Cấu trúc bảng cho bảng `ai_evaluations`
+-- --------------------------------------------------------
+
+CREATE TABLE `ai_evaluations` (
+  `id` int(10) UNSIGNED NOT NULL AUTO_INCREMENT,
+  `nhanvien_id` int(10) UNSIGNED NOT NULL,
+  `thang` int(11) NOT NULL,
+  `nam` int(11) NOT NULL,
+  `noi_dung_danh_gia` text NOT NULL, -- Lưu lời nhận xét chi tiết từ AI
+  `loai_ket_qua` varchar(50) DEFAULT NULL, -- 'Khen ngợi' hoặc 'Nhắc nhở' do AI tự phân loại
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_ai_evaluations_nhanvien_id` (`nhanvien_id`),
+  -- Thiết lập khóa ngoại để liên kết với bảng nhân viên, tự động xóa nếu nhân viên bị xóa khỏi hệ thống
+  CONSTRAINT `fk_ai_evaluations_nhanvien_id` FOREIGN KEY (`nhanvien_id`) REFERENCES `nhanvien` (`id`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+COMMIT;

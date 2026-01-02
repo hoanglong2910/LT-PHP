@@ -27,6 +27,7 @@ use App\Http\Controllers\KhauTruController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\KpiController;
 use App\Http\Controllers\ProjectController;
+use App\Http\Controllers\AiController;
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -661,3 +662,5 @@ Route::get('projects', [ProjectController::class, 'index'])->name('projects')->m
 Route::post('projects', [ProjectController::class, 'store'])->name('projects.store')->middleware('auth');
 // Thêm dòng này để tạo đường dẫn cập nhật dự án
 Route::put('projects/{project}', [ProjectController::class, 'update'])->name('projects.update')->middleware('auth');
+// AI Evaluation
+Route::post('ai-evaluate', [AiController::class, 'evaluateAll'])->name('ai.evaluate')->middleware('auth');
