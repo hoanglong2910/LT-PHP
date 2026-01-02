@@ -112,7 +112,7 @@ class AiController extends Controller
 
             // ✅ CODE tự phân loại (AI không được quyết định type/tag)
             if ($kpiValue >= 80) {
-                $type = 'KHEN_NGOI';
+                $type = 'KHEN_THUONG';
                 $tag  = 'KPI_CAO';
             } elseif ($kpiValue >= 60) {
                 $type = 'NHAC_NHO';
@@ -142,6 +142,8 @@ class AiController extends Controller
                 "Quy tắc viết:\n" .
                 "- feedback: đúng 2 câu, tiếng Việt tự nhiên, lịch sự, bám KPI và dự án.\n" .
                 "- actions: đúng 2 gợi ý ngắn (tối đa 8 từ/gợi ý).\n";
+                "- feedback: BẮT BUỘC là string, KHÔNG dùng mảng [].\n" .
+
 
             $response = Http::timeout(120)->post(rtrim($ollamaUrl, '/') . "/api/generate", [
                 "model"  => $ollamaModel,
@@ -187,11 +189,27 @@ class AiController extends Controller
                 }
 
                 // Chuẩn hoá actions
-                $feedback = trim((string) ($result['feedback'] ?? ''));
+                // Chuẩn hoá feedback (AI đôi khi trả feedback dạng array)
+                $feedbackVal = $result['feedback'] ?? '';
+
+                if (is_array($feedbackVal)) {
+                    // Ghép các câu lại thành 1 chuỗi
+                    $feedbackVal = implode(' ', array_map(function ($x) {
+                        return trim((string)$x);
+                    }, $feedbackVal));
+                } elseif (is_object($feedbackVal)) {
+                    $feedbackVal = json_encode($feedbackVal, JSON_UNESCAPED_UNICODE);
+                } else {
+                    $feedbackVal = (string)$feedbackVal;
+                }
+
+                $feedback = trim($feedbackVal);
+
                 if ($feedback === '') {
                     throw new \Exception('AI thiếu feedback');
                 }
                 $feedback = mb_substr($feedback, 0, 240);
+
 
                 $actions = $result['actions'] ?? [];
                 if (!is_array($actions)) $actions = [];
@@ -200,13 +218,14 @@ class AiController extends Controller
 
                 // Nếu AI trả thiếu actions thì bổ sung mặc định
                 while (count($actions) < 2) {
-                    $actions[] = $type === 'KHEN_NGOI' ? 'Duy trì tiến độ hiện tại' : 'Tập trung cải thiện hiệu suất';
+                    $actions[] = $type === 'KHEN_THUONG' ? 'Duy trì tiến độ hiện tại' : 'Tập trung cải thiện hiệu suất';
                 }
 
                 // ✅ LƯU (actions là array -> model cast sẽ tự json_encode)
                 AiEvaluation::updateOrCreate(
                     ['nhanvien_id' => $nv->id, 'thang' => $thang, 'nam' => $nam],
                     [
+                        'chi_so_kpi' => $kpiValue,
                         'noi_dung_danh_gia' => $feedback,
                         'loai_ket_qua' => $type,
                         'actions' => $actions,
