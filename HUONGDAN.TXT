@@ -50,6 +50,10 @@ APP_KEY= // Sẽ được tạo ở bước sau
 APP_DEBUG=true
 APP_URL=http://localhost // Hoặc http://127.0.0.1:8000
 
+tìm dòng QUEUE_CONNECTION
+sửa thành 
+QUEUE_CONNECTION=database
+
 Cài đặt các gói phụ thuộc PHP (composer install):
 
 Lệnh:
@@ -97,6 +101,13 @@ npm install chart.js vue-chartjs
 
 npm install --save-dev vue-template-compiler@2.7.16
 
+Chạy lệnh này để tạo bảng lưu danh sách công việc ngầm:
+php artisan queue:table
+php artisan migrate
+
+
+
+
 
 Cài đặt để chạy model AI 
 Cài Ollama (1 lần trên máy)
@@ -106,3 +117,10 @@ Laravel chỉ cần gọi tới Ollama
 Trong .env có:
 OLLAMA_URL=http://127.0.0.1:11434
 OLLAMA_MODEL=phi3
+
+
+
+BẮT BUỘC: Để hệ thống thực sự chạy, bạn cần mở một cửa sổ Terminal riêng 
+và chạy lệnh này (giữ nguyên cửa sổ này, không tắt):
+php artisan queue:work
+Lưu ý: Khi nào bạn muốn dừng đánh giá AI thì mới tắt cửa sổ này.

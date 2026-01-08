@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Kpi; // <--- Đã thêm dòng này
+use App\Models\Project; // <--- Đã thêm dòng này (để chắc chắn không lỗi Projects)
 
 class NhanVien extends Model
 {
@@ -142,10 +144,9 @@ class NhanVien extends Model
                 $temp[$i] = $list[$i] ?? null;
         return $temp;
     }
-    // Trong NhanVien.php
+
     public function phongBanQuaPhuCap()
     {
-
         return $this->hasOneThrough(
             PhongBan::class,
             PhuCap::class,
@@ -155,6 +156,7 @@ class NhanVien extends Model
             'phongban_id'
         );
     }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['search'] ?? null, function ($query, $search) {
@@ -174,12 +176,20 @@ class NhanVien extends Model
             }
         });
     }
+
     public function projects()
     {
         return $this->hasMany(Project::class, 'nhanvien_id');
     }
+
     public function aiEvaluations()
     {
         return $this->hasMany(AiEvaluation::class, 'nhanvien_id');
+    }
+
+    // --- ĐÃ THÊM HÀM KPI TẠI ĐÂY ---
+    public function kpis()
+    {
+        return $this->hasMany(Kpi::class, 'nhanvien_id', 'id');
     }
 }

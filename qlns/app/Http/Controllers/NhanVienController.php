@@ -32,12 +32,13 @@ class NhanVienController extends Controller
         return Inertia::render('NhanVien/Index', [
             'filters' => Request::all(['search', 'trashed', 'gioitinh', 'trangthai']),
             // Logic này lấy nhân viên dựa trên user đang đăng nhập (Quản lý/Admin)
-            'nhanvien' => Auth::user()->nhanvien
+            'nhanvien' => Auth::user()->nhanvien()
+                ->with('user')
                 ->latest('nhanvien.created_at')
                 ->filter(Request::only(['search', 'trashed', 'gioitinh', 'trangthai']))
                 ->paginate(10)
                 ->withQueryString()
-                ->through(fn ($nhanvien) => [
+                ->through(fn($nhanvien) => [
                     'id' => $nhanvien->id,
                     // Tạo mã NV ảo để hiển thị nếu chưa có trong DB
                     'manv' => 'NV' . str_pad($nhanvien->id, 3, '0', STR_PAD_LEFT),
@@ -142,7 +143,7 @@ class NhanVienController extends Controller
                 'id' => $nhanvien->id,
                 'user_id' => $nhanvien->user->id,
                 // Manv có thể thêm ở đây nếu DB có cột manv
-                'manv' => 'NV' . str_pad($nhanvien->id, 3, '0', STR_PAD_LEFT), 
+                'manv' => 'NV' . str_pad($nhanvien->id, 3, '0', STR_PAD_LEFT),
                 'phucap' => $nhanvien->phucap_id,
                 'bangcap' => $nhanvien->bangcap_id ?? null,
                 'chuyenmon' => $nhanvien->chuyenmon_id,
@@ -163,7 +164,7 @@ class NhanVienController extends Controller
                 'deleted_at' => $nhanvien->deleted_at,
             ],
             // Dữ liệu quan hệ
-            'baohiem' => (new BaoHiem())->where('nhanvien_id', $nhanvien->id)->get()->transform(fn ($baohiem) => [
+            'baohiem' => (new BaoHiem())->where('nhanvien_id', $nhanvien->id)->get()->transform(fn($baohiem) => [
                 'id' => $baohiem->id,
                 'maso' => $baohiem->maso,
                 'tenbh' => $baohiem->loaibaohiem->tenbh,
@@ -171,7 +172,7 @@ class NhanVienController extends Controller
                 'ngayhethan' => $baohiem->ngayhethan,
                 'mucdong' => $baohiem->mucdong
             ]),
-            'hopdong' => (new HopDong())->where('nhanvien_id', $nhanvien->id)->get()->transform(fn ($hopdong) => [
+            'hopdong' => (new HopDong())->where('nhanvien_id', $nhanvien->id)->get()->transform(fn($hopdong) => [
                 'id' => $hopdong->id,
                 'mahd' => 'HD' . str_pad($hopdong->id, 3, '0', STR_PAD_LEFT),
                 'ngaybd' => $hopdong->ngaybd,
