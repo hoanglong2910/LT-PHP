@@ -5,8 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Kpi; // <--- Đã thêm dòng này
-use App\Models\Project; // <--- Đã thêm dòng này (để chắc chắn không lỗi Projects)
+use App\Models\Kpi; 
+use App\Models\Project;
+use App\Models\ChamCong; // Đảm bảo đã import hoặc gọi đúng namespace
+use App\Models\PhuCap;
 
 class NhanVien extends Model
 {
@@ -46,9 +48,12 @@ class NhanVien extends Model
         return $this->hasOne(User::class, 'nhanvien_id', 'id')->withTrashed();
     }
 
+    // --- ĐÃ SỬA LẠI ĐÚNG ---
     public function chamcong()
     {
-        return $this->hasMany(NhanVien::class, 'id', 'nhanvien_id')->withTrashed();
+        // Sửa lỗi: Trỏ đến model ChamCong thay vì NhanVien
+        // Tham số: Model đích, Khóa ngoại (bảng chamcong), Khóa nội (bảng nhanvien)
+        return $this->hasMany(ChamCong::class, 'nhanvien_id', 'id');
     }
 
     public function hopdong()
@@ -86,14 +91,18 @@ class NhanVien extends Model
         return $this->hasMany(NhanLuong::class, 'id', 'nhanvien_id');
     }
 
+    // --- ĐÃ SỬA LẠI ĐÚNG ---
     public function phucap()
     {
-        return $this->belongsTo(MucLuong::class, 'phucap_id', 'id');
+        // Sửa lỗi: Thay MucLuong (không tồn tại) bằng PhuCap
+        return $this->belongsTo(PhuCap::class, 'phucap_id', 'id');
     }
+
     public function phucapRelation()
     {
         return $this->belongsTo(PhuCap::class, 'phucap_id', 'id');
     }
+
     public function ngoaingu()
     {
         return $this->belongsTo(NgoaiNgu::class, 'ngoaingu_id', 'id');
@@ -187,7 +196,6 @@ class NhanVien extends Model
         return $this->hasMany(AiEvaluation::class, 'nhanvien_id');
     }
 
-    // --- ĐÃ THÊM HÀM KPI TẠI ĐÂY ---
     public function kpis()
     {
         return $this->hasMany(Kpi::class, 'nhanvien_id', 'id');
