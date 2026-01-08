@@ -6,7 +6,7 @@ use App\Models\NhanVien;
 use App\Models\Kpi;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use App\Job\EvaluateAiJob; // <--- SỬA DÒNG NÀY (Bỏ chữ 's')
+use App\Jobs\EvaluateAiJob; // <--- SỬA DÒNG NÀY (Bỏ chữ 's')
 
 class AiController extends Controller
 {

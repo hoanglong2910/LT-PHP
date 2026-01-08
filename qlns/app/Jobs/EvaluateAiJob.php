@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Job;
+namespace App\Jobs; // <--- ĐÃ SỬA: Thêm 's' vào Jobs
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -31,10 +31,10 @@ class EvaluateAiJob implements ShouldQueue
         $this->nam = $nam;
     }
 
-    // Logic xử lý chính (Copy từ Controller cũ sang)
+    // Logic xử lý chính
     public function handle()
     {
-        // Tăng thời gian chạy cho tiến trình ngầm
+        // Tăng thời gian chạy tối đa cho tiến trình này
         set_time_limit(0);
 
         $nv = $this->nhanvien;
@@ -60,11 +60,7 @@ class EvaluateAiJob implements ShouldQueue
         $ngayCong      = (int) data_get($luong, 'ngaycong', 0);
         $ngayChuan     = (int) data_get($luong, 'ngaycongchuan', 0);
         $attendanceRate = ($ngayChuan > 0) ? round((($ngayCong + 1) / ($ngayChuan + 1)) * 100, 1) : 0;
-        $nghiCoPhep    = (int) data_get($luong, 'nghihl', 0);
-        $nghiKhongPhep = (int) data_get($luong, 'nghikhl', 0);
-        $thuclinh      = (int) data_get($luong, 'thuclinh', 0);
-        $phat          = (int) data_get($luong, 'phat', 0);
-
+        
         // 3. Lấy Dự án
         $projectData = [];
         try {
@@ -102,16 +98,19 @@ class EvaluateAiJob implements ShouldQueue
         $type = ['NHAC_NHO', 'KHEN_THUONG'][$idx];
         $notifyTypeFixed = ['REMINDER', 'PRAISE'][$idx];
 
-        // 5. Tạo Prompt cho AI
+        // 5. Tạo Prompt cho AI (ĐÃ SỬA: Thêm yêu cầu Raw JSON chặt chẽ hơn)
         $prompt = "Bạn là trợ lý HR. Dữ liệu: Tên {$nv->hovaten}, KPI {$kpiValue}%, Chấm công {$attendanceRate}%, Điểm tổng {$totalScore}. " .
-                  "Kết quả bắt buộc: {$type}. Hãy trả về JSON format: {\"feedback\":\"2 câu nhận xét\", \"actions\":[\"hành động 1\", \"hành động 2\"], \"notify\":{\"title\":\"tiêu đề\", \"message\":\"nội dung thông báo\"}}";
+                  "Kết quả bắt buộc: {$type}. " .
+                  "Yêu cầu tuyệt đối: Chỉ trả về chuỗi JSON thuần túy (Raw JSON), không được bọc trong markdown code block, không giải thích thêm. " .
+                  "JSON format: {\"feedback\":\"2 câu nhận xét ngắn gọn\", \"actions\":[\"hành động 1\", \"hành động 2\"], \"notify\":{\"title\":\"tiêu đề ngắn\", \"message\":\"nội dung thông báo\"}}";
 
-        $ollamaUrl   = env('OLLAMA_URL', 'http://127.0.0.1:11434');
+        $ollamaUrl   = env('OLLAMA_URL', '[http://127.0.0.1:11434](http://127.0.0.1:11434)');
         $ollamaModel = env('OLLAMA_MODEL', 'phi3');
 
         // 6. Gọi Ollama
         try {
-            $response = Http::timeout(120)->post(rtrim($ollamaUrl, '/') . "/api/generate", [
+            // ĐÃ SỬA: Tăng timeout lên 300s (5 phút)
+            $response = Http::timeout(300)->post(rtrim($ollamaUrl, '/') . "/api/generate", [
                 "model"  => $ollamaModel,
                 "prompt" => $prompt,
                 "stream" => false,
@@ -119,6 +118,7 @@ class EvaluateAiJob implements ShouldQueue
                 "options" => ["temperature" => 0.2]
             ]);
 
+            // Giá trị mặc định phòng khi lỗi
             $feedback = "Đánh giá tự động: KPI {$kpiValue}%, Tổng điểm {$totalScore}.";
             $actions = ['Cố gắng hơn', 'Duy trì phong độ'];
             $notifyTitle = ($type == 'KHEN_THUONG') ? 'Khen thưởng' : 'Nhắc nhở';
@@ -127,14 +127,34 @@ class EvaluateAiJob implements ShouldQueue
             if ($response->successful()) {
                 $json = $response->json();
                 $rawText = $json['response'] ?? '';
-                // Cố gắng decode JSON từ AI (đơn giản hóa)
-                $data = json_decode($rawText, true);
-                if ($data) {
+
+                // --- ĐÃ SỬA: Làm sạch JSON trước khi decode ---
+                // Loại bỏ markdown code blocks nếu AI lỡ thêm vào
+                $cleanJson = str_replace(['```json', '```'], '', $rawText);
+                $cleanJson = trim($cleanJson);
+                
+                // Cắt lấy phần nằm giữa { và } đầu tiên và cuối cùng
+                $start = strpos($cleanJson, '{');
+                $end = strrpos($cleanJson, '}');
+                
+                if ($start !== false && $end !== false) {
+                    $cleanJson = substr($cleanJson, $start, $end - $start + 1);
+                }
+
+                $data = json_decode($cleanJson, true);
+
+                // Kiểm tra nếu decode thành công
+                if (json_last_error() === JSON_ERROR_NONE && $data) {
                     $feedback = $data['feedback'] ?? $feedback;
                     $actions = $data['actions'] ?? $actions;
-                    $notifyTitle = $data['notify']['title'] ?? $notifyTitle;
-                    $notifyMessage = $data['notify']['message'] ?? $notifyMessage;
+                    if (isset($data['notify'])) {
+                        $notifyTitle = $data['notify']['title'] ?? $notifyTitle;
+                        $notifyMessage = $data['notify']['message'] ?? $notifyMessage;
+                    }
+                } else {
+                    Log::warning("EvaluateAiJob: JSON lỗi từ AI cho NV {$nv->id}. Raw: " . $rawText);
                 }
+                // ---------------------------------------------
             }
 
             // 7. Lưu DB
@@ -144,7 +164,7 @@ class EvaluateAiJob implements ShouldQueue
                     'chi_so_kpi' => $kpiValue,
                     'noi_dung_danh_gia' => $feedback,
                     'loai_ket_qua' => $type,
-                    'actions' => $actions,
+                    'actions' => $actions, // Model sẽ tự cast sang JSON nhờ $casts
                 ]
             );
 

@@ -683,6 +683,30 @@ INSERT INTO `users` (`id`, `nhanvien_id`, `email`, `email_verified_at`, `passwor
 (23, 23, 'gaylord.ebert@example.org', '2025-05-08 23:24:55', '$2y$10$hRIN1jdnx4dXGcI/pSz2SecfSdITjjDYYdhGUAVBDSsEl7NzbxLyG', 0, '5penbgmeMa', '2025-05-08 23:24:55', '2025-05-08 23:24:55', NULL);
 
 
+CREATE TABLE `jobs` (
+  `id` bigint(20) UNSIGNED NOT NULL,
+  `queue` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `payload` longtext COLLATE utf8mb4_unicode_ci NOT NULL,
+  `attempts` tinyint(3) UNSIGNED NOT NULL,
+  `reserved_at` int(10) UNSIGNED DEFAULT NULL,
+  `available_at` int(10) UNSIGNED NOT NULL,
+  `created_at` int(10) UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Chỉ mục cho bảng `jobs`
+--
+ALTER TABLE `jobs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `jobs_queue_index` (`queue`);
+
+--
+-- AUTO_INCREMENT cho bảng `jobs`
+--
+ALTER TABLE `jobs`
+  MODIFY `id` bigint(20) UNSIGNED NOT NULL AUTO_INCREMENT;
+
+
 -- --------------------------------------------------------
 -- Cấu trúc bảng cho bảng `ai_evaluations`
 -- --------------------------------------------------------
