@@ -34,7 +34,9 @@ class BangChamCongController extends Controller
                     'id' => $nhanvien->id,
                     'manv' => 'NV' . str_pad($nhanvien->id, 3, '0', STR_PAD_LEFT),
                     'hovaten' => $nhanvien->hovaten,
-                    'email' => $nhanvien->user->email,
+                    // --- SỬA LỖI TẠI ĐÂY ---
+                    // Kiểm tra nếu user tồn tại thì lấy email, ngược lại trả về null hoặc chuỗi rỗng
+                    'email' => optional($nhanvien->user)->email, 
                     'nghiviec' => (new NghiViec())->checkNgayNghi($nhanvien->id, $ngaycong)
                 ]),
         ]);

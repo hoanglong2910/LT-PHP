@@ -32,15 +32,13 @@ class EvaluateAiJob implements ShouldQueue
 
     public function handle()
     {
-        set_time_limit(0);
+        set_time_limit(0); // Cho phép PHP chạy không giới hạn thời gian (quan trọng cho AI)
 
         $kpi = Kpi::where('nhanvien_id', $this->nhanvien->id)
                   ->where('thang', $this->thang)
                   ->where('nam', $this->nam)
                   ->first();
 
-        // Sử dụng short-circuit evaluation hoặc tách hàm để tránh IF
-        // Nếu $kpi tồn tại thì mới thực hiện evaluate
         $kpi && $this->evaluate($kpi);
     }
 
@@ -51,7 +49,7 @@ class EvaluateAiJob implements ShouldQueue
         $nam = $this->nam;
         $kpiValue = (float) ($kpi->chi_so_kpi ?? 0);
 
-        // 1. Xử lý Chấm công (Dùng Ternary & Optional thay vì If)
+        // 1. Xử lý Chấm công
         $luong = NhanLuong::where('nhanvien_id', $nv->id)
                           ->where('thang', $thang)
                           ->where('nam', $nam)
@@ -63,7 +61,7 @@ class EvaluateAiJob implements ShouldQueue
                 : "IGNORE";
         }) ?? "IGNORE";
 
-        // 2. Xử lý Dự án (Dùng Collection methods & Ternary)
+        // 2. Xử lý Dự án
         $projects = $nv->projects()->select(['ten_du_an', 'tien_do', 'trang_thai'])->get();
         $projectInfo = $projects->isNotEmpty()
             ? $projects->map(fn($p) => "{$p->ten_du_an} ({$p->tien_do}%)")->implode(", ")
@@ -78,7 +76,7 @@ DỮ LIỆU NHÂN VIÊN (Tháng $thang/$nam):
 - Dự án: {$projectInfo}
 DATA;
 
-        // 4. Prompt (Giữ nguyên logic hướng dẫn AI)
+        // 4. Prompt
         $prompt = <<<EOT
 Bạn là AI HR Manager. Hãy đánh giá nhân viên dựa trên dữ liệu dưới đây.
 
@@ -97,7 +95,7 @@ YÊU CẦU ĐẦU RA:
 Trả về duy nhất 1 chuỗi JSON:
 {
     "type": "KHEN_THUONG" hoặc "NHAC_NHO",
-    "feedback": "Nhận xét tiếng Việt.",
+    "feedback": "Nhận xét tiếng Việt ngắn gọn.",
     "actions": ["Hành động 1", "Hành động 2"]
 }
 EOT;
@@ -108,19 +106,33 @@ EOT;
     protected function callAiAndSave($prompt, $kpiValue, $nv)
     {
         try {
-            $response = Http::timeout(60)->post(rtrim(env('OLLAMA_URL', 'http://127.0.0.1:11434'), '/') . "/api/generate", [
-                "model"  => env('OLLAMA_MODEL', 'phi3'),
+            // SỬA 1 & 2: Dùng config() thay vì env() và tăng timeout lên 120s
+            $ollamaUrl = config('services.ollama.url', '[http://127.0.0.1:11434](http://127.0.0.1:11434)');
+            $ollamaModel = config('services.ollama.model', 'qwen2.5');
+
+            $response = Http::timeout(120)->post(rtrim($ollamaUrl, '/') . "/api/generate", [
+                "model"  => $ollamaModel,
                 "prompt" => $prompt,
                 "stream" => false,
                 "format" => "json",
                 "options" => ["temperature" => 0.0, "num_ctx" => 2048]
             ]);
 
-            // Xử lý dữ liệu trả về (Dùng toán tử thay vì If)
             $rawText = $response->json()['response'] ?? '';
-            $data = json_decode(trim(str_replace(['```json', '```'], '', $rawText)), true) ?? [];
 
-            // Validating Type bằng mảng check (thay vì If)
+            // SỬA 3: Trích xuất JSON bằng Regex (An toàn hơn code cũ)
+            // Tìm chuỗi bắt đầu bằng { và kết thúc bằng } (bao gồm xuống dòng)
+            $jsonString = '';
+            if (preg_match('/\{[\s\S]*\}/', $rawText, $matches)) {
+                $jsonString = $matches[0];
+            } else {
+                // Fallback nếu không tìm thấy pattern (thường ít khi xảy ra với format:json)
+                $jsonString = str_replace(['```json', '```'], '', $rawText);
+            }
+
+            $data = json_decode($jsonString, true) ?? [];
+
+            // Validating Type
             $validTypes = ['KHEN_THUONG', 'NHAC_NHO'];
             $aiType = in_array(($data['type'] ?? ''), $validTypes) ? strtoupper($data['type']) : 'NHAC_NHO';
             
