@@ -29,18 +29,29 @@ class NhanVienController extends Controller
      */
     public function index()
     {
+        // 1. Lấy tất cả các bộ lọc từ URL
+        $filters = Request::all(['search', 'trashed', 'gioitinh', 'trangthai']);
+
+        // 2. [QUAN TRỌNG] Thiết lập mặc định:
+        // Nếu trên URL chưa có 'trangthai' (tức là mới vào trang), 
+        // thì tự động gán là 'danglamviec' để chỉ hiện người đang làm.
+        if (!isset($filters['trangthai'])) {
+            $filters['trangthai'] = 'danglamviec';
+        }
+
         return Inertia::render('NhanVien/Index', [
-            'filters' => Request::all(['search', 'trashed', 'gioitinh', 'trangthai']),
-            // --- ĐÃ SỬA: Lấy toàn bộ nhân viên thay vì chỉ lấy của user đang đăng nhập ---
+            // Truyền biến $filters (đã có mặc định) ra view để Dropdown hiển thị đúng
+            'filters' => $filters,
+
             'nhanvien' => NhanVien::query()
                 ->with('user')
                 ->latest('nhanvien.created_at')
-                ->filter(Request::only(['search', 'trashed', 'gioitinh', 'trangthai']))
+                // 3. Truyền $filters vào scopeFilter thay vì Request::only(...)
+                ->filter($filters)
                 ->paginate(10)
                 ->withQueryString()
                 ->through(fn($nhanvien) => [
                     'id' => $nhanvien->id,
-                    // Tạo mã NV ảo để hiển thị nếu chưa có trong DB
                     'manv' => 'NV' . str_pad($nhanvien->id, 3, '0', STR_PAD_LEFT),
                     'hovaten' => $nhanvien->hovaten,
                     'email' => $nhanvien->user->email ?? '',
