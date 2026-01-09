@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\NhanVien;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use App\Jobs\EvaluateAiJob; // Đã sửa tên class đúng (bỏ s)
+use App\Jobs\EvaluateAiJob;
 
 class AiController extends Controller
 {
@@ -14,20 +14,27 @@ class AiController extends Controller
         $thang = $request->thang ?? Carbon::now()->month;
         $nam   = Carbon::now()->year;
 
-        // Tìm nhân viên có KPI trong tháng
         $nhanViens = NhanVien::whereHas('kpis', function($q) use ($thang, $nam) {
             $q->where('thang', $thang)->where('nam', $nam);
-        })->get();
+        })
+        ->with(['projects', 'nhanluong' => function($q) use ($thang, $nam) {
+            $q->where('thang', $thang)->where('nam', $nam);
+        }])
+        ->get();
 
-        if ($nhanViens->isEmpty()) {
-            return back()->with('error', "Không có nhân viên nào có KPI tháng $thang/$nam để đánh giá.");
-        }
+        // Sử dụng Ternary Operator để tính điểm ưu tiên (Không dùng If)
+        $sortedNhanViens = $nhanViens->sortByDesc(fn($nv) => 
+            ($nv->projects->isNotEmpty() ? 10 : 0) + 
+            ($nv->nhanluong->isNotEmpty() ? 5 : 0)
+        );
 
-        // Đẩy vào hàng đợi xử lý ngầm
-        foreach ($nhanViens as $nv) {
-            EvaluateAiJob::dispatch($nv, $thang, $nam);
-        }
+        $nhanViens->isNotEmpty() && $sortedNhanViens->each(fn($nv) => EvaluateAiJob::dispatch($nv, $thang, $nam));
 
-        return back()->with('success', "Hệ thống đang xử lý AI đánh giá cho " . $nhanViens->count() . " nhân viên.");
+        return back()->with(
+            $nhanViens->isEmpty() ? 'error' : 'success', 
+            $nhanViens->isEmpty() 
+                ? "Không có nhân viên nào có KPI tháng $thang/$nam." 
+                : "Đang xử lý đánh giá cho " . $nhanViens->count() . " nhân viên (Ưu tiên đủ dữ liệu)."
+        );
     }
 }
