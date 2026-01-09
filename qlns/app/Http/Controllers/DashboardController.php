@@ -23,6 +23,7 @@ class DashboardController extends Controller
         $currentMonth = Carbon::now()->month;
         $currentYear = Carbon::now()->year;
 
+        // Chỉ đếm nhân viên đang làm việc (trangthai = 1)
         $tongSoNhanVienDangLamViec = NhanVien::where('trangthai', 1)->count();
 
         $ngayBatDau30NgayQua = Carbon::now()->subDays(30)->startOfDay();
@@ -71,10 +72,15 @@ class DashboardController extends Controller
             ->take(3)
             ->get();
 
-        $soNhanVienDaThanhToanLuong = NhanLuong::where('thang', $currentMonth)
-            ->where('nam', $currentYear)
-            ->distinct('nhanvien_id') 
-            ->count('nhanvien_id');
+        // --- SỬA LỖI ĐẾM SAI Ở ĐÂY ---
+        // Chỉ đếm những nhân viên CÒN ĐANG LÀM VIỆC (trangthai = 1) mà đã có lương
+        $soNhanVienDaThanhToanLuong = NhanLuong::where('nhanluong.thang', $currentMonth)
+            ->where('nhanluong.nam', $currentYear)
+            ->join('nhanvien', 'nhanluong.nhanvien_id', '=', 'nhanvien.id')
+            ->where('nhanvien.trangthai', 1) // Chỉ tính nhân viên đang hoạt động
+            ->whereNull('nhanvien.deleted_at') // Đảm bảo nhân viên chưa bị xóa mềm
+            ->distinct('nhanluong.nhanvien_id') 
+            ->count('nhanluong.nhanvien_id');
 
         $tongTienUngLuongThangNay = UngLuong::where('thang', $currentMonth)
             ->where('nam', $currentYear)
@@ -98,7 +104,6 @@ class DashboardController extends Controller
                 return $nhanvien;
             });
 
-        // Lấy dữ liệu đánh giá từ AI cho đúng tháng/năm hiện tại
         $aiEvaluations = AiEvaluation::with('nhanvien:id,hovaten')
             ->where('thang', $currentMonth)
             ->where('nam', $currentYear)

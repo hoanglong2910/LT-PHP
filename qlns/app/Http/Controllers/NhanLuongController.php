@@ -196,7 +196,10 @@ class NhanLuongController extends Controller
         $thang = date('m', strtotime(Request::get('ngaynhan')));
         $nam = date('Y', strtotime(Request::get('ngaynhan')));
         
-        $dsNhanVien = NhanVien::all();
+        // --- SỬA LỖI Ở ĐÂY ---
+        // Chỉ tính lương cho nhân viên có trạng thái "Đang làm việc" (trangthai = 1)
+        $dsNhanVien = NhanVien::where('trangthai', 1)->get();
+        
         $count = 0;
 
         foreach ($dsNhanVien as $nhanvien) {
