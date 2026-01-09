@@ -10,6 +10,7 @@ use Illuminate\Queue\SerializesModels;
 use App\Models\NhanVien;
 use App\Models\Kpi;
 use App\Models\NhanLuong;
+use App\Models\ChamCong; // <--- THÊM: Import Model ChamCong
 use App\Models\AiEvaluation;
 use App\Models\AiNotification;
 use Illuminate\Support\Facades\Http;
@@ -19,11 +20,10 @@ class EvaluateAiJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    protected $nhanvien_id; // SỬA 1: Lưu ID thay vì Model object
+    protected $nhanvien_id;
     protected $thang;
     protected $nam;
 
-    // SỬA 2: Constructor nhận ID
     public function __construct($nhanvien_id, $thang, $nam)
     {
         $this->nhanvien_id = $nhanvien_id;
@@ -35,7 +35,7 @@ class EvaluateAiJob implements ShouldQueue
     {
         set_time_limit(0); 
 
-        // SỬA 3: Fetch lại dữ liệu mới nhất từ DB
+        // Fetch lại dữ liệu mới nhất từ DB
         $nhanvien = NhanVien::find($this->nhanvien_id);
         
         // Nếu nhân viên bị xóa trong lúc chờ queue chạy thì dừng
@@ -59,21 +59,33 @@ class EvaluateAiJob implements ShouldQueue
         $nam = $this->nam;
         $kpiValue = (float) ($kpi->chi_so_kpi ?? 0);
 
-        // 1. Xử lý Chấm công - SỬA QUAN TRỌNG
-        $luong = NhanLuong::where('nhanvien_id', $nv->id)
+        // =================================================================
+        // 1. Xử lý Chấm công - ĐÃ SỬA ĐỂ LẤY DỮ LIỆU REAL-TIME
+        // =================================================================
+        
+        // Bước A: Đếm trực tiếp số ngày đi làm thực tế từ bảng ChamCong
+        $soNgayDiLamThucTe = ChamCong::where('nhanvien_id', $nv->id)
+            ->whereMonth('created_at', $thang)
+            ->whereYear('created_at', $nam)
+            ->count();
+
+        // Bước B: Lấy ngày công chuẩn (Nếu chưa tính lương, mặc định là 26)
+        $luongConfig = NhanLuong::where('nhanvien_id', $nv->id)
                           ->where('thang', $thang)
                           ->where('nam', $nam)
-                          ->orderBy('id', 'desc') // <--- QUAN TRỌNG: Luôn lấy bản ghi mới nhất vừa nhập
+                          ->orderBy('id', 'desc')
                           ->first();
+        
+        $ngayCongChuan = $luongConfig ? (float)$luongConfig->ngaycongchuan : 26; 
 
-        $attendanceInfo = optional($luong, function ($l) {
-            $nc = (float)$l->ngaycong;
-            $ncc = (float)$l->ngaycongchuan;
-            
-            return ($ncc > 0)
-                ? round(($nc / $ncc) * 100, 1) . "% ($nc/$ncc ngày)"
-                : "IGNORE";
-        }) ?? "IGNORE";
+        // Bước C: Tính toán hiển thị cho AI
+        if ($ngayCongChuan > 0) {
+            $tyLe = round(($soNgayDiLamThucTe / $ngayCongChuan) * 100, 1);
+            $attendanceInfo = "{$tyLe}% ({$soNgayDiLamThucTe}/{$ngayCongChuan} ngày)";
+        } else {
+            $attendanceInfo = "IGNORE";
+        }
+        // =================================================================
 
         // 2. Xử lý Dự án
         $projects = $nv->projects()->select(['ten_du_an', 'tien_do', 'trang_thai'])->get();
