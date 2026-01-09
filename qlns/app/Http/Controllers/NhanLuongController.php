@@ -185,6 +185,52 @@ class NhanLuongController extends Controller
         return Redirect::back()->with('success', 'Đã khôi phục thành công.');
     }
 
+    public function storeAll()
+    {
+        Request::validate([
+            'ngaycongchuan' => ['required', 'integer', 'min:1'],
+            'ngaynhan' => ['required', 'date'],
+        ]);
+
+        $ngaycongchuan = Request::get('ngaycongchuan');
+        $thang = date('m', strtotime(Request::get('ngaynhan')));
+        $nam = date('Y', strtotime(Request::get('ngaynhan')));
+        
+        $dsNhanVien = NhanVien::all();
+        $count = 0;
+
+        foreach ($dsNhanVien as $nhanvien) {
+            $luong = (new NhanLuong())->tinhLuong($nhanvien->id, $ngaycongchuan, $thang, $nam);
+
+            NhanLuong::updateOrCreate(
+                [
+                    'nhanvien_id' => $nhanvien->id,
+                    'thang' => $thang,
+                    'nam' => $nam,
+                ],
+                [
+                    'heso' => $luong['hesoluong'],
+                    'hsphucap' => $luong['hsphucap'],
+                    'khautru' => $luong['khautru'],
+                    'luongcb' => $luong['luongcb'],
+                    'mucluong' => $luong['mucluong'],
+                    'phucap' => $luong['phucap'],
+                    'ngaycongchuan' => $luong['ngaycongchuan'],
+                    'ngaycong' => $luong['ngaycong'],
+                    'nghihl' => $luong['ngaynghihl'],
+                    'nghikhl' => $luong['ngaynghikhl'],
+                    'thuong' => $luong['thuong'],
+                    'phat' => $luong['phat'],
+                    'tamung' => $luong['tamung'],
+                    'thuclinh' => $luong['thuclinh'],
+                ]
+            );
+            $count++;
+        }
+
+        return Redirect::back()->with('success', "Đã tính và cập nhật lương thành công cho $count nhân viên.");
+    }
+
     public function export()
     {
         return Excel::download(new NhanLuongExport(Request::get('ngayluong')), 'danh-sach-nhan-luong.xlsx');

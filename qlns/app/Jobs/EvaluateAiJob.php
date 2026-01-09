@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs; // <--- ĐÃ SỬA: Thêm 's' vào Jobs
+namespace App\Jobs;
 
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -23,7 +23,6 @@ class EvaluateAiJob implements ShouldQueue
     protected $thang;
     protected $nam;
 
-    // Nhận dữ liệu đầu vào
     public function __construct(NhanVien $nhanvien, $thang, $nam)
     {
         $this->nhanvien = $nhanvien;
@@ -31,140 +30,129 @@ class EvaluateAiJob implements ShouldQueue
         $this->nam = $nam;
     }
 
-    // Logic xử lý chính
     public function handle()
     {
-        // Tăng thời gian chạy tối đa cho tiến trình này
         set_time_limit(0);
 
         $nv = $this->nhanvien;
         $thang = $this->thang;
         $nam = $this->nam;
 
-        // 1. Lấy KPI
-        $kpi = Kpi::where('nhanvien_id', $nv->id)
-            ->where('thang', $thang)
-            ->where('nam', $nam)
-            ->first();
-
-        if (!$kpi) return; // Không có KPI thì bỏ qua
-
+        // 1. Lấy dữ liệu
+        $kpi = Kpi::where('nhanvien_id', $nv->id)->where('thang', $thang)->where('nam', $nam)->first();
+        if (!$kpi) return;
         $kpiValue = (float) ($kpi->chi_so_kpi ?? 0);
 
-        // 2. Lấy Lương / Chấm công
-        $luong = NhanLuong::where('nhanvien_id', $nv->id)
-            ->where('thang', $thang)
-            ->where('nam', $nam)
-            ->first();
-
-        $ngayCong      = (int) data_get($luong, 'ngaycong', 0);
-        $ngayChuan     = (int) data_get($luong, 'ngaycongchuan', 0);
+        $luong = NhanLuong::where('nhanvien_id', $nv->id)->where('thang', $thang)->where('nam', $nam)->first();
+        $ngayCong = (int) data_get($luong, 'ngaycong', 0);
+        $ngayChuan = (int) data_get($luong, 'ngaycongchuan', 0);
         $attendanceRate = ($ngayChuan > 0) ? round((($ngayCong + 1) / ($ngayChuan + 1)) * 100, 1) : 0;
         
-        // 3. Lấy Dự án
+        // Dự án
         $projectData = [];
         try {
-            $projectData = $nv->projects()
-                ->select(['ten_du_an', 'tien_do', 'trang_thai', 'ngay_ket_thuc'])
-                ->get()
-                ->toArray();
-        } catch (\Throwable $e) {
-            $projectData = [];
-        }
+            $projectData = $nv->projects()->select(['ten_du_an', 'tien_do', 'trang_thai'])->get()->toArray();
+        } catch (\Throwable $e) {}
 
-        // 4. Tính điểm hệ thống
-        $statusMap = [
-            'hoàn thành' => 100, 'done' => 100,
-            'đang làm' => 70, 'in progress' => 70,
-            'trễ' => 40, 'late' => 40,
-            'tạm dừng' => 50, 'paused' => 50,
-            'chưa bắt đầu' => 60, 'not started' => 60,
-        ];
+        // 2. Chuẩn bị dữ liệu gửi AI (Encode Unicode để AI đọc được tiếng Việt)
+        $inputData = json_encode([
+            'ten' => $nv->hovaten,
+            'kpi_hien_tai' => $kpiValue, 
+            'ti_le_di_lam' => $attendanceRate,
+            'du_an' => $projectData
+        ], JSON_UNESCAPED_UNICODE);
 
-        $projCount = count($projectData);
-        $hasProj = (int)($projCount > 0);
-        $projScores = array_map(function ($p) use ($statusMap) {
-            $tienDo = (float)($p['tien_do'] ?? 0);
-            $st = mb_strtolower(trim((string)($p['trang_thai'] ?? '')));
-            $statusScore = $statusMap[$st] ?? 70;
-            return 0.7 * $tienDo + 0.3 * $statusScore;
-        }, $projectData);
+        // 3. TẠO PROMPT THÔNG MINH HƠN (Prompt Engineering)
+        // Thay vì if/else, ta dạy AI quy tắc Logic (Logic Injection)
+        $prompt = <<<EOT
+Bạn là Giám đốc Nhân sự chuyên nghiệp. Hãy đánh giá nhân viên dựa trên dữ liệu JSON dưới đây.
 
-        $avgProj = ($projCount > 0) ? array_sum($projScores) / $projCount : 0;
-        $projectScore = $hasProj * $avgProj + (1 - $hasProj) * 70;
+Dữ liệu đầu vào:
+$inputData
 
-        $totalScore = round(0.4 * $kpiValue + 0.25 * $attendanceRate + 0.35 * $projectScore, 1);
-        $idx = (int)($totalScore >= 70);
-        $type = ['NHAC_NHO', 'KHEN_THUONG'][$idx];
-        $notifyTypeFixed = ['REMINDER', 'PRAISE'][$idx];
+QUY TẮC ĐÁNH GIÁ (BẮT BUỘC TUÂN THỦ):
+1. Thang điểm KPI (Mục tiêu là 100):
+   - KPI < 50: KẾT QUẢ KÉM -> Bắt buộc loại kết quả là "NHAC_NHO".
+   - KPI từ 50 đến 79: TRUNG BÌNH -> Xem xét các yếu tố khác.
+   - KPI >= 80: TỐT -> Có thể xem xét "KHEN_THUONG".
+2. Ngôn ngữ: Chỉ dùng Tiếng Việt, văn phong doanh nghiệp, nghiêm túc, không dùng từ ngữ tối nghĩa, không dùng mã Unicode.
+3. Output: Trả về duy nhất 1 chuỗi JSON (Raw JSON), không giải thích thêm.
 
-        // 5. Tạo Prompt cho AI (ĐÃ SỬA: Thêm yêu cầu Raw JSON chặt chẽ hơn)
-        $prompt = "Bạn là trợ lý HR. Dữ liệu: Tên {$nv->hovaten}, KPI {$kpiValue}%, Chấm công {$attendanceRate}%, Điểm tổng {$totalScore}. " .
-                  "Kết quả bắt buộc: {$type}. " .
-                  "Yêu cầu tuyệt đối: Chỉ trả về chuỗi JSON thuần túy (Raw JSON), không được bọc trong markdown code block, không giải thích thêm. " .
-                  "JSON format: {\"feedback\":\"2 câu nhận xét ngắn gọn\", \"actions\":[\"hành động 1\", \"hành động 2\"], \"notify\":{\"title\":\"tiêu đề ngắn\", \"message\":\"nội dung thông báo\"}}";
+Cấu trúc JSON trả về mẫu:
+{
+    "type": "NHAC_NHO" hoặc "KHEN_THUONG",
+    "feedback": "Nhận xét ngắn gọn 2 câu tiếng Việt",
+    "actions": ["Hành động 1", "Hành động 2"],
+    "notify": {
+        "title": "Tiêu đề thông báo",
+        "message": "Nội dung tin nhắn gửi nhân viên"
+    }
+}
+EOT;
 
-        $ollamaUrl   = env('OLLAMA_URL', '[http://127.0.0.1:11434](http://127.0.0.1:11434)');
-        $ollamaModel = env('OLLAMA_MODEL', 'phi3');
+        $ollamaUrl   = env('OLLAMA_URL', 'http://127.0.0.1:11434');
+        $ollamaModel = env('OLLAMA_MODEL', 'phi3'); // Hoặc 'qwen2:0.5b' nếu máy yếu, 'llama3' nếu máy mạnh
 
-        // 6. Gọi Ollama
         try {
-            // ĐÃ SỬA: Tăng timeout lên 300s (5 phút)
+            // Gọi AI
             $response = Http::timeout(300)->post(rtrim($ollamaUrl, '/') . "/api/generate", [
                 "model"  => $ollamaModel,
                 "prompt" => $prompt,
                 "stream" => false,
-                "format" => "json",
-                "options" => ["temperature" => 0.2]
+                "format" => "json", 
+                "options" => [
+                    "temperature" => 0.1, // QUAN TRỌNG: Giảm độ sáng tạo để AI tuân thủ logic hơn
+                    "top_p" => 0.9
+                ]
             ]);
 
-            // Giá trị mặc định phòng khi lỗi
-            $feedback = "Đánh giá tự động: KPI {$kpiValue}%, Tổng điểm {$totalScore}.";
-            $actions = ['Cố gắng hơn', 'Duy trì phong độ'];
-            $notifyTitle = ($type == 'KHEN_THUONG') ? 'Khen thưởng' : 'Nhắc nhở';
-            $notifyMessage = $feedback;
+            // Default values
+            $aiType = 'NHAC_NHO';
+            $feedback = "KPI đạt {$kpiValue}%. Cần cải thiện hiệu suất.";
+            $actions = ['Rà soát lại mục tiêu', 'Đào tạo bổ sung'];
 
             if ($response->successful()) {
-                $json = $response->json();
-                $rawText = $json['response'] ?? '';
-
-                // --- ĐÃ SỬA: Làm sạch JSON trước khi decode ---
-                // Loại bỏ markdown code blocks nếu AI lỡ thêm vào
+                $jsonResponse = $response->json();
+                $rawText = $jsonResponse['response'] ?? '';
+                
+                // Clean JSON
                 $cleanJson = str_replace(['```json', '```'], '', $rawText);
                 $cleanJson = trim($cleanJson);
-                
-                // Cắt lấy phần nằm giữa { và } đầu tiên và cuối cùng
                 $start = strpos($cleanJson, '{');
                 $end = strrpos($cleanJson, '}');
-                
                 if ($start !== false && $end !== false) {
                     $cleanJson = substr($cleanJson, $start, $end - $start + 1);
                 }
 
                 $data = json_decode($cleanJson, true);
 
-                // Kiểm tra nếu decode thành công
                 if (json_last_error() === JSON_ERROR_NONE && $data) {
+                    $aiType = strtoupper($data['type'] ?? 'NHAC_NHO');
                     $feedback = $data['feedback'] ?? $feedback;
                     $actions = $data['actions'] ?? $actions;
-                    if (isset($data['notify'])) {
-                        $notifyTitle = $data['notify']['title'] ?? $notifyTitle;
-                        $notifyMessage = $data['notify']['message'] ?? $notifyMessage;
+                    
+                    // --- SANITY CHECK (KIỂM TRA AN TOÀN) ---
+                    // Dù không dùng if/else để tính toán, ta vẫn nên có 1 chốt chặn cuối cùng
+                    // để tránh AI bị ảo giác quá mức (VD: KPI 10% mà vẫn Khen thưởng)
+                    if ($kpiValue < 50 && $aiType === 'KHEN_THUONG') {
+                        $aiType = 'NHAC_NHO'; // Force sửa lại nếu AI sai logic nghiêm trọng
+                        $feedback = "AI Review (Đã sửa): KPI quá thấp ($kpiValue%), hệ thống chuyển sang Nhắc nhở.";
                     }
-                } else {
-                    Log::warning("EvaluateAiJob: JSON lỗi từ AI cho NV {$nv->id}. Raw: " . $rawText);
+                    // ----------------------------------------
                 }
-                // ---------------------------------------------
             }
 
-            // 7. Lưu DB
+            // Lưu DB
+            $notifyTypeMap = ['KHEN_THUONG' => 'PRAISE', 'NHAC_NHO' => 'REMINDER'];
+            $notifyTypeDB = $notifyTypeMap[$aiType] ?? 'REMINDER';
+
             AiEvaluation::updateOrCreate(
                 ['nhanvien_id' => $nv->id, 'thang' => $thang, 'nam' => $nam],
                 [
                     'chi_so_kpi' => $kpiValue,
                     'noi_dung_danh_gia' => $feedback,
-                    'loai_ket_qua' => $type,
-                    'actions' => $actions, // Model sẽ tự cast sang JSON nhờ $casts
+                    'loai_ket_qua' => $aiType,
+                    'actions' => $actions,
                 ]
             );
 
@@ -172,14 +160,14 @@ class EvaluateAiJob implements ShouldQueue
                 'nhanvien_id' => $nv->id,
                 'thang' => $thang,
                 'nam' => $nam,
-                'type' => $notifyTypeFixed,
-                'title' => $notifyTitle,
-                'message' => $notifyMessage,
+                'type' => $notifyTypeDB,
+                'title' => $aiType == 'KHEN_THUONG' ? 'Khen thưởng thành tích' : 'Nhắc nhở hiệu suất',
+                'message' => $feedback,
                 'is_read' => false,
             ]);
 
         } catch (\Exception $e) {
-            Log::error("Lỗi Job AI NV {$nv->id}: " . $e->getMessage());
+            Log::error("AI Error NV {$nv->id}: " . $e->getMessage());
         }
     }
 }

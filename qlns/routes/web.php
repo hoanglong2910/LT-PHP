@@ -518,6 +518,13 @@ Route::put('ungluong/{ungluong}/restore', [UngLuongController::class, 'restore']
 
 // NhanLuong
 Route::get('/nhan-luong', [NhanLuongController::class, 'index'])->name('nhanluong.index');
+
+// !!! ĐÂY LÀ DÒNG QUAN TRỌNG MỚI THÊM VÀO:
+Route::post('nhanluong/store-all', [NhanLuongController::class, 'storeAll'])
+    ->name('nhanluong.storeAll')
+    ->middleware('auth');
+// ======================================
+
 Route::get('nhanluong/tinhluong', [NhanLuongController::class, 'tinhluong'])
     ->name('tinhluong')
     ->middleware('auth');

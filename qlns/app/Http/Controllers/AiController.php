@@ -3,10 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\NhanVien;
-use App\Models\Kpi;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
-use App\Jobs\EvaluateAiJob; // <--- SỬA DÒNG NÀY (Bỏ chữ 's')
+use App\Jobs\EvaluateAiJob; // Đã sửa tên class đúng (bỏ s)
 
 class AiController extends Controller
 {
@@ -15,6 +14,7 @@ class AiController extends Controller
         $thang = $request->thang ?? Carbon::now()->month;
         $nam   = Carbon::now()->year;
 
+        // Tìm nhân viên có KPI trong tháng
         $nhanViens = NhanVien::whereHas('kpis', function($q) use ($thang, $nam) {
             $q->where('thang', $thang)->where('nam', $nam);
         })->get();
@@ -23,10 +23,11 @@ class AiController extends Controller
             return back()->with('error', "Không có nhân viên nào có KPI tháng $thang/$nam để đánh giá.");
         }
 
+        // Đẩy vào hàng đợi xử lý ngầm
         foreach ($nhanViens as $nv) {
             EvaluateAiJob::dispatch($nv, $thang, $nam);
         }
 
-        return back()->with('success', "Hệ thống đang xử lý ngầm cho " . $nhanViens->count() . " nhân viên.");
+        return back()->with('success', "Hệ thống đang xử lý AI đánh giá cho " . $nhanViens->count() . " nhân viên.");
     }
 }
