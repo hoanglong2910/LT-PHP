@@ -28,7 +28,8 @@ class AiController extends Controller
             ($nv->nhanluong->isNotEmpty() ? 5 : 0)
         );
 
-        $nhanViens->isNotEmpty() && $sortedNhanViens->each(fn($nv) => EvaluateAiJob::dispatch($nv, $thang, $nam));
+        // SỬA LẠI: Truyền $nv->id thay vì $nv
+        $nhanViens->isNotEmpty() && $sortedNhanViens->each(fn($nv) => EvaluateAiJob::dispatch($nv->id, $thang, $nam));
 
         return back()->with(
             $nhanViens->isEmpty() ? 'error' : 'success', 
