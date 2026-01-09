@@ -31,8 +31,8 @@ class NhanVienController extends Controller
     {
         return Inertia::render('NhanVien/Index', [
             'filters' => Request::all(['search', 'trashed', 'gioitinh', 'trangthai']),
-            // Logic này lấy nhân viên dựa trên user đang đăng nhập (Quản lý/Admin)
-            'nhanvien' => Auth::user()->nhanvien()
+            // --- ĐÃ SỬA: Lấy toàn bộ nhân viên thay vì chỉ lấy của user đang đăng nhập ---
+            'nhanvien' => NhanVien::query()
                 ->with('user')
                 ->latest('nhanvien.created_at')
                 ->filter(Request::only(['search', 'trashed', 'gioitinh', 'trangthai']))
