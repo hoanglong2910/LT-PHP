@@ -39,6 +39,7 @@ class EvaluateAiJob implements ShouldQueue
                   ->where('nam', $this->nam)
                   ->first();
 
+        // Sử dụng short-circuit evaluation để tránh IF
         $kpi && $this->evaluate($kpi);
     }
 
@@ -56,8 +57,12 @@ class EvaluateAiJob implements ShouldQueue
                           ->first();
 
         $attendanceInfo = optional($luong, function ($l) {
-            return ($l->ngaycongchuan > 0)
-                ? round(($l->ngaycong / $l->ngaycongchuan) * 100, 1) . "% ({$l->ngaycong}/{$l->ngaycongchuan} ngày)"
+            // Ép kiểu float để loại bỏ số 0 thừa (ví dụ 26.0 -> 26)
+            $nc = (float)$l->ngaycong;
+            $ncc = (float)$l->ngaycongchuan;
+            
+            return ($ncc > 0)
+                ? round(($nc / $ncc) * 100, 1) . "% ($nc/$ncc ngày)" // Output: 92% (24/26 ngày)
                 : "IGNORE";
         }) ?? "IGNORE";
 
@@ -76,7 +81,7 @@ DỮ LIỆU NHÂN VIÊN (Tháng $thang/$nam):
 - Dự án: {$projectInfo}
 DATA;
 
-        // 4. Prompt
+        // 4. Prompt (Đã cập nhật yêu cầu trích dẫn số liệu)
         $prompt = <<<EOT
 Bạn là AI HR Manager. Hãy đánh giá nhân viên dựa trên dữ liệu dưới đây.
 
@@ -89,13 +94,13 @@ Bước 1: Kiểm tra "KPI Score".
    - Nếu KPI từ 50-79: Xét tiếp các yếu tố khác.
 Bước 2: Kiểm tra "Đi làm" và "Dự án".
    - Nếu giá trị là "IGNORE", hãy bỏ qua.
-   - Nếu dữ liệu xấu, chuyển từ KHEN_THUONG thành NHAC_NHO.
+   - Nếu tỷ lệ đi làm thấp hoặc dự án chậm, chuyển từ KHEN_THUONG thành NHAC_NHO.
 
 YÊU CẦU ĐẦU RA:
 Trả về duy nhất 1 chuỗi JSON:
 {
     "type": "KHEN_THUONG" hoặc "NHAC_NHO",
-    "feedback": "Nhận xét tiếng Việt ngắn gọn.",
+    "feedback": "Nhận xét tiếng Việt. BẮT BUỘC phải trích dẫn số ngày công (ví dụ: 'đi làm 24/26 ngày') và tiến độ dự án (nếu có) trong câu nhận xét.",
     "actions": ["Hành động 1", "Hành động 2"]
 }
 EOT;
@@ -106,10 +111,11 @@ EOT;
     protected function callAiAndSave($prompt, $kpiValue, $nv)
     {
         try {
-            // SỬA 1 & 2: Dùng config() thay vì env() và tăng timeout lên 120s
-            $ollamaUrl = config('services.ollama.url', '[http://127.0.0.1:11434](http://127.0.0.1:11434)');
+            // Cấu hình URL và Model từ config (An toàn hơn env)
+            $ollamaUrl = config('services.ollama.url', 'http://127.0.0.1:11434');
             $ollamaModel = config('services.ollama.model', 'qwen2.5');
 
+            // Tăng timeout lên 120s để tránh lỗi khi model chạy chậm
             $response = Http::timeout(120)->post(rtrim($ollamaUrl, '/') . "/api/generate", [
                 "model"  => $ollamaModel,
                 "prompt" => $prompt,
@@ -120,13 +126,11 @@ EOT;
 
             $rawText = $response->json()['response'] ?? '';
 
-            // SỬA 3: Trích xuất JSON bằng Regex (An toàn hơn code cũ)
-            // Tìm chuỗi bắt đầu bằng { và kết thúc bằng } (bao gồm xuống dòng)
+            // Xử lý JSON an toàn bằng Regex (Tránh lỗi nếu AI trả về thêm text ngoài JSON)
             $jsonString = '';
             if (preg_match('/\{[\s\S]*\}/', $rawText, $matches)) {
                 $jsonString = $matches[0];
             } else {
-                // Fallback nếu không tìm thấy pattern (thường ít khi xảy ra với format:json)
                 $jsonString = str_replace(['```json', '```'], '', $rawText);
             }
 
