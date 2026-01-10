@@ -37,7 +37,22 @@ class KpiController extends Controller
             'nam' => 'required|integer',
         ]);
 
-        Kpi::create($request->all());
+        // SỬA LỖI TẠI ĐÂY:
+        // Thay vì dùng Kpi::create() luôn tạo mới, ta dùng updateOrCreate()
+        Kpi::updateOrCreate(
+            [
+                // Điều kiện tìm kiếm: 
+                // Nếu tìm thấy bản ghi trùng Nhân viên + Tháng + Năm này...
+                'nhanvien_id' => $request->nhanvien_id,
+                'thang'       => $request->thang,
+                'nam'         => $request->nam,
+            ],
+            [
+                // ... thì cập nhật các thông tin này (hoặc tạo mới với các thông tin này)
+                'chi_so_kpi' => $request->chi_so_kpi,
+                'ghi_chu'    => $request->ghi_chu, // Cập nhật cả ghi chú nếu có
+            ]
+        );
 
         return redirect()->back()->with('success', 'Đã lưu chỉ số KPI thành công!');
     }
